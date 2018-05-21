@@ -809,7 +809,7 @@ RemoteObjectTemplate.getChangeStatus = function getChangeStatus() {
     let a = 0;
     let c = 0;
 
-    for (const subscriptionId in this.subscriptions) {
+    for (var subscriptionId in this.subscriptions) {
         const changes = this.getChangeGroup('change', subscriptionId);
 
         c += changes.length;
@@ -904,7 +904,7 @@ RemoteObjectTemplate.sessionize = function(obj, referencingObj) {
 
         // Spread the love to objects that the object may have referenced
         if (obj.__referencedObjects__) {
-            for (const id in obj.__referencedObjects__) {
+            for (var id in obj.__referencedObjects__) {
                 const referencedObj = obj.__referencedObjects__[id];
                 objectTemplate.sessionize(referencedObj, obj);
             }
@@ -1285,7 +1285,7 @@ RemoteObjectTemplate._manageChanges = function manageChanges(defineProperty) {
 RemoteObjectTemplate._generateChanges = function generateChanges() {
     const session = this._getSession();
 
-    for (const obj in session.objects) {
+    for (var obj in session.objects) {
         this._logChanges(session.objects[obj]);
     }
 };
@@ -1305,7 +1305,7 @@ RemoteObjectTemplate._logChanges = function logChanges(obj) {
     // Go through all the properties and transfer them to newly created object
     const props = obj.__template__.getProperties();
 
-    for (const prop in props) {
+    for (var prop in props) {
         const defineProperty = props[prop];
         const type = defineProperty.type;
 
@@ -1376,7 +1376,7 @@ RemoteObjectTemplate._changedValue = function changedValue(obj, prop, value) {
         return;
     }
 
-    for (const subscription in subscriptions) {
+    for (var subscription in subscriptions) {
         if (subscriptions[subscription] != this.processingSubscription) {
             const changeGroup = this.getChangeGroup('change', subscription);
 
@@ -1446,7 +1446,7 @@ RemoteObjectTemplate._referencedArray = function referencedArray(obj, prop, arra
 
     // Create a change group entries either from the referenced array or from a previously saved copy of the array
     function processSubscriptions(changeType, existingChangeGroup) {
-        for (const subscription in subscriptions) {
+        for (var subscription in subscriptions) {
             const changeGroup = this.getChangeGroup(changeType, subscription);
             if (subscriptions[subscription] != this.processingSubscription) {
                 if (existingChangeGroup) {
@@ -1460,7 +1460,7 @@ RemoteObjectTemplate._referencedArray = function referencedArray(obj, prop, arra
     }
 
     function copyChangeGroup(changeGroup, existingChangeGroup) {
-        for (const key in existingChangeGroup) {
+        for (var key in existingChangeGroup) {
             changeGroup[key] = existingChangeGroup[key];
         }
     }
@@ -1504,13 +1504,13 @@ RemoteObjectTemplate._convertArrayReferencesToChanges = function convertArrayRef
     const session = this._getSession();
     const subscriptions = this._getSubscriptions();
 
-    for (const subscription in subscriptions) {
+    for (var subscription in subscriptions) {
         if (subscriptions[subscription] != this.processingSubscription) {
             const changeGroup = this.getChangeGroup('change', subscription);
             const refChangeGroup = this.getChangeGroup('array', subscription);
 
             // Look at every array reference
-            for (const key in refChangeGroup) {
+            for (var key in refChangeGroup) {
 
                 // split the key into an id and property name
                 const param = key.split('/');
@@ -1605,12 +1605,12 @@ RemoteObjectTemplate.MarkChangedArrayReferences = function MarkChangedArrayRefer
     const session = this._getSession();
     const subscriptions = this._getSubscriptions();
 
-    for (const subscription in subscriptions) {
+    for (var subscription in subscriptions) {
         if (subscriptions[subscription] != this.processingSubscription) {
             const refChangeGroup = this.getChangeGroup('arrayDirty', subscription);
 
             // Look at every array reference
-            for (const key in refChangeGroup) {
+            for (var key in refChangeGroup) {
 
                 // split the key into an id and property name
                 const param = key.split('/');
@@ -1760,7 +1760,7 @@ RemoteObjectTemplate._applyChanges = function applyChanges(changes, force, subsc
 
     let hasObjects = false;
 
-    for (const objId in changes) {
+    for (var objId in changes) {
         let obj = session.objects[objId];
 
         if (obj) {
@@ -1867,7 +1867,7 @@ RemoteObjectTemplate._applyChanges = function applyChanges(changes, force, subsc
  */
 RemoteObjectTemplate._applyObjectChanges = function applyObjectChanges(changes, rollback, obj, force) {
     // Go through each recorded change which is a pair of old and new values
-    for (const prop in changes[obj.__id__]) {
+    for (var prop in changes[obj.__id__]) {
         const change = changes[obj.__id__][prop];
         const oldValue = change[0];
         const newValue = change[1];
@@ -2206,12 +2206,12 @@ RemoteObjectTemplate._rollbackChanges = function rollbackChanges() {
     const session = this._getSession();
     const changes = this.getChanges();
 
-    for (const objId in changes) {
+    for (var objId in changes) {
         const obj = session.objects[objId];
 
         if (obj) {
             // Go through each recorded change which is a pair of old and new values
-            for (const prop in changes[objId]) {
+            for (var prop in changes[objId]) {
                 const oldValue = changes[objId][prop][0];
 
                 if (oldValue instanceof Array) {
@@ -2316,7 +2316,7 @@ RemoteObjectTemplate.inject = function inject(template, injector) {
     // Go through existing objects to inject them as well
     const session = this._getSession();
 
-    for (const obj in session.objects) {
+    for (var obj in session.objects) {
         if (this._getBaseClass(session.objects[obj].__template__) == this._getBaseClass(template)) {
             injector.call(session.objects[obj]);
         }
@@ -2410,7 +2410,7 @@ RemoteObjectTemplate._toTransport = function clone(obj) {
         else {
             // Otherwise grab each individual property
             res = {type: 'object', value: {}};
-            for (const prop in obj) {
+            for (var prop in obj) {
                 if (obj.hasOwnProperty(prop)) {
                     res.value[prop] = this._toTransport(obj[prop]);
                 }
@@ -2469,7 +2469,7 @@ RemoteObjectTemplate._fromTransport = function clone(obj) {
         case 'object':
             const objo = {};
 
-            for (const prop in obj.value) {
+            for (var prop in obj.value) {
                 objo[prop] = this._fromTransport(obj.value[prop]);
             }
 
@@ -2520,7 +2520,7 @@ RemoteObjectTemplate._getSession = function getSession(_sid) {
  * @private
  */
 RemoteObjectTemplate._deleteChangeGroups = function deleteChangeGroups(type) {
-    for (const subscription in this._getSubscriptions()) {
+    for (var subscription in this._getSubscriptions()) {
         this.deleteChangeGroup(type, subscription);
     }
 };
@@ -2689,7 +2689,7 @@ const __extends = (this && this.__extends) || (function () {
             d.__proto__ = b;
         }) ||
         function (d, b) {
-            for (const p in b) {
+            for (var p in b) {
                 if (b.hasOwnProperty(p)) {
                     d[p] = b[p];
                 }
