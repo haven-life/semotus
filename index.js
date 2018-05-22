@@ -2673,7 +2673,9 @@ RemoteObjectTemplate.bindDecorators = function (objectTemplate) {
 
 function applyRuleSet(prop, ruleSet) {
     if (prop instanceof Array && ruleSet instanceof Array && ruleSet.length > 0) {
-        return prop.some(r=> ruleSet.indexOf(r) >= 0);
+        return prop.some(function(r) {
+            return ruleSet.indexOf(r) >= 0;
+        });
     }
     else {
         return prop;
