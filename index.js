@@ -122,7 +122,7 @@ RemoteObjectTemplate.createSession = function createSession(role, sendMessage, s
     };
 
     if (role instanceof  Array) {
-        for (let ix = 0; ix < role.length; ++ix) {
+        for (var ix = 0; ix < role.length; ++ix) {
             this.subscribe(role[ix]);
         }
 
@@ -144,7 +144,7 @@ RemoteObjectTemplate.createSession = function createSession(role, sendMessage, s
 RemoteObjectTemplate.deleteSession = function deleteSession(sessionId) {
     let session = this._getSession(sessionId);
 
-    for (let calls in session.remoteCalls) {
+    for (var calls in session.remoteCalls) {
         session.remoteCalls[calls].deferred.reject({code: 'reset', text: 'Session resynchronized'});
     }
 
@@ -464,7 +464,7 @@ RemoteObjectTemplate.processMessage = function processMessage(remoteCall, subscr
         if (this.controller && this.controller['preServerCall']) {
             let changes = {};
 
-            for (let objId in JSON.parse(remoteCall.changes)) {
+            for (var objId in JSON.parse(remoteCall.changes)) {
                 changes[this.__dictionary__[objId.replace(/[^-]*-/, '').replace(/-.*/, '')].__name__] = true;
             }
 
@@ -1110,7 +1110,7 @@ RemoteObjectTemplate._setupProperty = function setupProperty(propertyName, defin
                             if (data.length) {
                                 let digest = '';
 
-                                for (let ix = 0; ix < data.length; ++ix) {
+                                for (var ix = 0; ix < data.length; ++ix) {
                                     digest += data[ix].__id__;
                                 }
 
@@ -1474,7 +1474,7 @@ RemoteObjectTemplate._referencedArray = function referencedArray(obj, prop, arra
 
             // Walk through the array and grab the reference
             if (arrayRef) {
-                for (let ix = 0; ix < arrayRef.length; ++ix) {
+                for (var ix = 0; ix < arrayRef.length; ++ix) {
                     const elem = arrayRef[ix];
 
                     if (typeof(elem) !== 'undefined' && elem != null) {
@@ -1546,7 +1546,7 @@ RemoteObjectTemplate._convertArrayReferencesToChanges = function convertArrayRef
                 // Walk through all elements (which ever is longer, original or new)
                 const len = Math.max(curr.length, orig.length);
 
-                for (let ix = 0; ix < len; ++ix) {
+                for (var ix = 0; ix < len; ++ix) {
                     // See if the value has changed
                     let currValue = undefined;
 
@@ -1646,7 +1646,7 @@ RemoteObjectTemplate.MarkChangedArrayReferences = function MarkChangedArrayRefer
                 // Walk through all elements (which ever is longer, original or new)
                 const len = Math.max(curr.length, orig.length);
 
-                for (let ix = 0; ix < len; ++ix) {
+                for (var ix = 0; ix < len; ++ix) {
                     // See if the value has changed
                     let currValue = undefined;
 
@@ -1679,7 +1679,7 @@ RemoteObjectTemplate._convertValue = function convertValue(value) {
     if (value instanceof Array) {
         const newValue = [];
 
-        for (let ix = 0; ix < value.length; ++ix) {
+        for (var ix = 0; ix < value.length; ++ix) {
             if (value[ix]) {
                 if (typeof(value[ix]) === 'object') {
                     newValue[ix] = value[ix].__id__ || JSON.stringify(value[ix]);
@@ -1903,7 +1903,7 @@ RemoteObjectTemplate._applyObjectChanges = function applyObjectChanges(changes, 
                     length = Math.max(newValue.length, 0);
                 }
 
-                for (let ix = 0; ix < length; ++ix) {
+                for (var ix = 0; ix < length; ++ix) {
                     const unarray_newValue = unarray(newValue[ix]);
                     if (oldValue) {
                         if (!this._applyPropertyChange(changes, rollback, obj, prop, ix, unarray(oldValue[ix]), unarray_newValue, force)) {
@@ -2187,7 +2187,7 @@ RemoteObjectTemplate._applyPropertyChange = function applyPropertyChange(changes
  * @private
  */
 RemoteObjectTemplate._rollback = function rollback(rollback) {
-    for (let ix = 0; ix < rollback.length; ++ix) {
+    for (var ix = 0; ix < rollback.length; ++ix) {
         if (rollback[ix][2] >= 0) {
             ((rollback[ix][0])[rollback[ix][1]])[rollback[ix][2]] = rollback[ix][3];
         }
@@ -2215,7 +2215,7 @@ RemoteObjectTemplate._rollbackChanges = function rollbackChanges() {
                 const oldValue = changes[objId][prop][0];
 
                 if (oldValue instanceof Array) {
-                    for (let ix = 0; ix < oldValue.length; ++ix) {
+                    for (var ix = 0; ix < oldValue.length; ++ix) {
                         obj[prop][ix] = oldValue[0];
                     }
                 }
@@ -2389,7 +2389,7 @@ RemoteObjectTemplate._toTransport = function clone(obj) {
     else if (obj instanceof Array) {
         res = {type: 'array', value: []};
 
-        for (let ix = 0; ix < obj.length; ++ix) {
+        for (var ix = 0; ix < obj.length; ++ix) {
             res.value[ix] = this._toTransport(obj[ix]);
         }
     }
@@ -2455,7 +2455,7 @@ RemoteObjectTemplate._fromTransport = function clone(obj) {
         case 'array':
             const obja = [];
 
-            for (let ix = 0; ix < obj.value.length; ++ix) {
+            for (var ix = 0; ix < obj.value.length; ++ix) {
                 obja[ix] = this._fromTransport(obj.value[ix]);
             }
 
