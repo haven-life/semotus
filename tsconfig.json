@@ -4,10 +4,16 @@
     "target": "es5",
     "noImplicitAny": false,
     "sourceMap": true,
+    "lib": [
+      "es6"
+    ],
     "typeRoots": [
       "./node_modules/@types"
     ],
     "experimentalDecorators": true,
     "emitDecoratorMetadata":true
-  }
+  },
+  "include": [
+    "./node_modules/supertype"
+  ]
 }

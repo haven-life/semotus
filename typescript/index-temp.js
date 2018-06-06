@@ -34,10 +34,9 @@
  else {
         root.RemoteObjectTemplate = factory(root.Q, root._, root.ObjectTemplate);
     }
-}(this, function (Q, _, ObjectTemplate2) {
+}(this, function (Q, _, ObjectTemplate) {
     'use strict';
-debugger;
-var ObjectTemplate = ObjectTemplate2.default;
+
 const RemoteObjectTemplate = ObjectTemplate._createObject();
 
 RemoteObjectTemplate._useGettersSetters = typeof(window) === 'undefined';
