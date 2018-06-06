@@ -36,7 +36,7 @@
     }
 }(this, function (Q, _, ObjectTemplate2) {
     'use strict';
-debugger;
+    
 var ObjectTemplate = ObjectTemplate2.default;
 const RemoteObjectTemplate = ObjectTemplate._createObject();
 
@@ -506,6 +506,7 @@ RemoteObjectTemplate.processMessage = function processMessage(remoteCall, subscr
         }
     }
 
+    // debugger;
     /**
      * If the changes could be applied and the validation was successful call the method
      *
@@ -989,6 +990,7 @@ objectTemplate = this.__objectTemplate__;
     }
 };
 
+// debugger;
 /**
  * Overridden method in ObjectTemplate that creates a structure initialize a property in constructor
  * and adds any getters and setters to the property so changes can be tracked
@@ -1494,6 +1496,7 @@ RemoteObjectTemplate._referencedArray = function referencedArray(obj, prop, arra
     }
 };
 
+// debugger;
 /**
  * Determine whether each array reference was an actual change or just a reference
  * If an actual change convert to a change log entry.  For arrays the changes
@@ -1980,6 +1983,7 @@ RemoteObjectTemplate._validateServerIncomingProperty = function (obj, prop, defi
     return true;
 }
 
+// debugger;
 /**
  * Apply changes for a specific property, cascading changes in the event
  * that a reference to an object that needs to be created is part of the change
@@ -2336,6 +2340,7 @@ RemoteObjectTemplate.inject = function inject(template, injector) {
  *
  * @private
  */
+
 RemoteObjectTemplate._queueRemoteCall = function queueRemoteCall(objId, functionName, deferred, args) {
     const session = this._getSession();
     args = Array.prototype.slice.call(args); // JS arguments array not an array after all
@@ -2486,6 +2491,7 @@ RemoteObjectTemplate._fromTransport = function clone(obj) {
 
 /**************************** Helper Functions **********************************/
 
+// debugger;
 /**
  * Remove extra positions at the end of the array to keep length correct
  *
@@ -2595,7 +2601,7 @@ RemoteObjectTemplate.bindDecorators = function (objectTemplate) {
 
             // second time we must call the function returned the first time because it has the
             // properties as a closure
-            ret = ret ? ret(target, objectTemplate) : ObjectTemplate.supertypeClass(target, objectTemplate);
+            ret = ret ? ret(target, objectTemplate) : ObjectTemplate2.supertypeClass(target, objectTemplate);
 
             // Mainly for peristor properties to make sure they get transported
             target.createProperty = function (propertyName, defineProperty) {
@@ -2629,20 +2635,21 @@ RemoteObjectTemplate.bindDecorators = function (objectTemplate) {
 
 	    // Called first time with parameter rather than target - call supertypes supertypeClass function which will
         // return a function that must be called on the 2nd pass when we have a target.  It will remember parameter
-        ret = ObjectTemplate.supertypeClass(target, objectTemplate);
+        ret = ObjectTemplate2.supertypeClass(target, objectTemplate);
 	    return decorator; // decorator will be called 2nd time with ret as a closure
     };
 
     this.Supertype = function () {
-        return ObjectTemplate.Supertype.call(this, objectTemplate);
+        return ObjectTemplate2.Supertype.call(this, objectTemplate);
     };
-    this.Supertype.prototype = ObjectTemplate.Supertype.prototype;
+    // debugger;
+    this.Supertype.prototype = ObjectTemplate2.Supertype.prototype;
 
     this.property = function (props) {
         props = props || {};
         props.toClient = applyRuleSet(props.toClient, this.toClientRuleSet);
         props.toServer = applyRuleSet(props.toServer, this.toServerRuleSet);
-        const baseDecorator = ObjectTemplate.property(props, objectTemplate);
+        const baseDecorator = ObjectTemplate2.property(props, objectTemplate);
         return function (target, targetKey) {
             baseDecorator(target, targetKey);
             const defineProperties = {};
