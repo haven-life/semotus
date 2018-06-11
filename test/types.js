@@ -1,6 +1,7 @@
 var expect = require('chai').expect;
 var Q = require('q');
 var _ = require('underscore');
+var fs = require('fs');
 
 var ClientObjectTemplate = require('../index.js')._createObject();
 ClientObjectTemplate.role = 'client';
@@ -30,11 +31,6 @@ var ServerController = createTemplates(ServerObjectTemplate).Controller;
 var serverAssert;
 
 function createTemplates(objectTemplate) {
-    if (typeof(require) !== 'undefined') {
-        var fs = require('fs');
-        var Q = require('q');
-    }
-
     MySubTemplate = objectTemplate.create('MySubTemplate', {
         myString: {type: String, value: ''}
     });
