@@ -1131,8 +1131,15 @@ RemoteObjectTemplate._setupProperty = function setupProperty(propertyName, defin
                     }
                 }
                 catch (e) {
-                    objectTemplate.logger.error({component: 'semotus', module: 'setter', activity: 'stingify', data: {property: prop}},
-                        'caught exception trying to stringify ' + prop);
+                    objectTemplate.logger.error({
+                        component: 'semotus',
+                        module: 'setter',
+                        activity: 'transform:JSON.stringify',
+                        data: {
+                            property: prop,
+                            definePropertyType: defineProperty.type.name
+                        }
+                    }, 'caught exception trying to stringify ' + prop);
                     return data;
                 }
             }
