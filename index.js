@@ -852,6 +852,7 @@ RemoteObjectTemplate._stashObject = function stashObject(obj, template) {
 
     if (obj.__id__.match(/^client.*?-([0-9]*)$/)) {
         this.maxClientSequence = Math.max(this.maxClientSequence, RegExp.$1);
+        this.nextObjId = Math.max(this.maxClientSequence, this.nextObjId) + 1;
     }
 
     return executeInit;
@@ -2115,7 +2116,7 @@ RemoteObjectTemplate._applyPropertyChange = function applyPropertyChange(changes
         objId = newValue;
 
         if (session.objects[objId]) {
-            if ((session.objects[objId] instanceof type) || (session.objects[objId].__template__.__name__ === type.__name__)) {
+            if (session.objects[objId] instanceof type) {
                 newValue = session.objects[objId];
             }
             else {
