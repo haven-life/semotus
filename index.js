@@ -953,8 +953,8 @@ RemoteObjectTemplate._setupFunction = function setupFunction(propertyName, prope
         return function b() {
 
             if (this.__objectTemplate__)                {
-objectTemplate = this.__objectTemplate__;
-}
+                objectTemplate = this.__objectTemplate__;
+            }
 
             if (validate && this.controller) { //TODO: make this one if statement
                 if (!validate.call(this.controller)) {
@@ -1149,6 +1149,7 @@ RemoteObjectTemplate._setupProperty = function setupProperty(propertyName, defin
 
            return function z() {
 
+                //** Don't think I need to change this */
                 const currentObjectTemplate = this.__objectTemplate__? this.__objectTemplate__ : objectTemplate;
 
                 if (!defineProperty.isVirtual && this['__' + prop] instanceof Array) {
@@ -1581,6 +1582,7 @@ RemoteObjectTemplate._convertArrayReferencesToChanges = function convertArrayRef
                             changeGroup[obj.__id__][prop] = [this.clone(values), this.clone(values)];
                             changeGroup[obj.__id__][prop][1][ix] = currValue;
                         }
+                        //** Don't think I need to change this */
                         if (curr[ix] && curr[ix].__id__ && !curr[ix].__objectTemplate__) {
                             this.sessionize(curr[ix], obj);
                         }
@@ -2277,6 +2279,7 @@ RemoteObjectTemplate._createEmptyObject = function createEmptyObject(template, o
     }
     else {
         template.__objectTemplate__.nextDispenseId = objId;
+        this.nextDispenseId = objId; /** May be redundant with previous line */
         const wasTransient = this.__transient__;
 
         if (isTransient) {
