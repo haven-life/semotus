@@ -1149,7 +1149,6 @@ RemoteObjectTemplate._setupProperty = function setupProperty(propertyName, defin
 
            return function z() {
 
-                //** Don't think I need to change this */
                 const currentObjectTemplate = this.__objectTemplate__? this.__objectTemplate__ : objectTemplate;
 
                 if (!defineProperty.isVirtual && this['__' + prop] instanceof Array) {
@@ -1582,7 +1581,7 @@ RemoteObjectTemplate._convertArrayReferencesToChanges = function convertArrayRef
                             changeGroup[obj.__id__][prop] = [this.clone(values), this.clone(values)];
                             changeGroup[obj.__id__][prop][1][ix] = currValue;
                         }
-                        //** Don't think I need to change this */
+                        
                         if (curr[ix] && curr[ix].__id__ && !curr[ix].__objectTemplate__) {
                             this.sessionize(curr[ix], obj);
                         }
