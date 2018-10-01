@@ -2,7 +2,7 @@
     "name": "semotus",
     "description": "A subclass of supertype that synchronizes sets of objects.",
     "homepage": "https://github.com/selsamman/semotus",
-    "version": "2.3.15",
+    "version": "2.4.0",
     "dependencies": {
         "q": "1.x",
         "supertype": "3.0.0"
@@ -39,10 +39,10 @@
     },
     "repository": {
         "type": "git",
-        "url": "git://github.com/selsamman/semotus.git"
+        "url": "git://github.com/haven-life/semotus.git"
     },
     "bugs": {
-        "url": "http://github.com/selsamman/semotus/issues"
+        "url": "http://github.com/haven-life/semotus/issues"
     },
     "optionalDependencies": {}
 }
