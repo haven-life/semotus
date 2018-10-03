@@ -4,13 +4,11 @@
  *
  */
 
-// debugger;
 var expect = require('chai').expect;
 var Q = require('q');
 var _ = require('underscore');
 var Semotus = require('../index.js');
 
-// debugger;
 var ClientObjectTemplate = Semotus._createObject();
 ClientObjectTemplate.role = 'client';
 ClientObjectTemplate._useGettersSetters = false;
