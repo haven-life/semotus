@@ -5,7 +5,7 @@
     "version": "2.4.1",
     "dependencies": {
         "q": "1.x",
-        "supertype": "3.1.*"
+        "supertype": "haven-life/supertype#test/feature/stats-d-supertype"
     },
     "devDependencies": {
         "@types/bluebird": "*",
