@@ -289,8 +289,8 @@ function createTemplates(objectTemplate) {
                 this.preServerCallObjects[templateName] = true;
             }
         },
-        postServerCall: function (arg1, arg2, arg3, arg4) {
-            changes = JSON.stringify(arg3);
+        postServerCall: function (ifChangesAreGreaterThanTwo, callContext, changeString) {
+            changes = JSON.stringify(changeString);
 
             if (this.postServerCallThrowException) {
                 throw 'postServerCallThrowException';
