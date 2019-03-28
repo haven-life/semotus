@@ -290,10 +290,6 @@ function createTemplates(objectTemplate) {
             }
         },
         postServerCall: function (arg1, arg2, arg3, arg4) {
-            console.log(`\n${arg1}\n`);
-            console.log(`\n${JSON.stringify(arg2)}\n`);
-            console.log(`\n${JSON.stringify(arg3)}\n`);
-            console.log(`\n${arg4}\n`);
             changes = JSON.stringify(arg3);
 
             if (this.postServerCallThrowException) {
