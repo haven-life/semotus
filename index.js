@@ -2673,8 +2673,13 @@ RemoteObjectTemplate.bindDecorators = function (objectTemplate) {
             defineProperty.on = 'server';
         }
         return function (target, propertyName, descriptor) {
-            descriptor.value  = objectTemplate._setupFunction(propertyName, descriptor.value,
+            descriptor.value = objectTemplate._setupFunction(propertyName, descriptor.value,
                 defineProperty.on, defineProperty.validate);
+
+            if (!descriptor.value.__on__) {
+                descriptor.value.__on__ = 'server';
+            }
+
             if (defineProperty.type) {
                 descriptor.value.__returns__ = defineProperty.type;
             }
