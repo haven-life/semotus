@@ -2669,6 +2669,11 @@ RemoteObjectTemplate.bindDecorators = function (objectTemplate) {
 
     this.remote = function (defineProperty) {
         defineProperty = defineProperty || {};
+
+        /*
+            if we haven't supplied a configuration object into the decorator,
+             default the role of this function to a server API function
+         */
         if (!defineProperty.on) {
             defineProperty.on = 'server';
         }
@@ -2676,7 +2681,11 @@ RemoteObjectTemplate.bindDecorators = function (objectTemplate) {
             descriptor.value = objectTemplate._setupFunction(propertyName, descriptor.value,
                 defineProperty.on, defineProperty.validate);
 
-            if (!descriptor.value.__on__) {
+            /*
+                this function been marked as a server API either explicitly or by default.
+                set the appropriate metadata.
+             */
+            if (defineProperty.on === 'server') {
                 descriptor.value.__on__ = 'server';
             }
 
