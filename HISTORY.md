@@ -1,5 +1,7 @@
-## 2.5.1
+## 2.5.2
 * Fixed a bug where callIfValid still called the remote function if it wasn't valid
+## 2.5.1
+* only allow on server functions to be called directly from the client
 ## 2.5.0
 * Adding the string of all the changes performed in a server call as parameter in the postServerCall callback
 ## 2.4.1
