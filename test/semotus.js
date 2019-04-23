@@ -303,7 +303,6 @@ function createTemplates(objectTemplate) {
             }
         },
         validateServerCall: function () {
-            console.log(failServer);
             if (failServer) {
                 serverFailed = true;
             }
