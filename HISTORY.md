@@ -1,4 +1,4 @@
-## 2.6.0
+## 3.0.0
 * Moving the targeted npm repository to @havenlife/semotus
 * Made Supertype a peerDependency, indicating that it is the consuming application's responsibility to install semotus
 ## 2.5.2
