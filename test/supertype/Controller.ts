@@ -32,7 +32,6 @@ export class Controller extends Supertype {
 		on: 'server',
 		serverValidation: async (controller: Controller, ...args: any[]) => {
 			controller.serverValidatorCounter = args.length;
-			console.log('-------IN SERVER VALIDATOR FUNCTION------');
 			if (args.length === 3 && args[0] === 'first' && args[1] === 'second' && args[2] === 'third') {
 				controller.argumentValidator = true;
 				await Q.delay(1500);
@@ -44,7 +43,6 @@ export class Controller extends Supertype {
 		}
 	})
 	testServerValidation(...args) {
-		console.log('------IN REMOTE FUNCTION-----');
 		return ObjectTemplate.serverAssert();
 	}
 

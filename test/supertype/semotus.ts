@@ -329,7 +329,7 @@ describe('Typescript Banking Example', function() {
 		};
 
 		clientController
-			.testServerValidation()
+			.testServerValidation('first', 'second')
 			.then(
 				function() {
 					expect('Should not be here').to.equal(false);
