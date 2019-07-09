@@ -119,193 +119,193 @@ describe('Typescript Banking Example', function() {
 		sam.amorphic.logger = oldSendToLog;
 	});
 
-	it('pass object graph to server and return', function(done) {
-		RemoteObjectTemplate.serverAssert = function() {
-			expect(serverController.sam.roles[0].account.getBalance()).to.equal(100);
-			expect(serverController.sam.roles[1].account.getBalance()).to.equal(125);
-			expect(serverController.preServerCallObjects['Controller']).to.equal(true);
-			serverController.sam.amorphic.logger.warn({}, 'kicking the bucket');
-		};
-		expect(clientController.sam.roles[0].account.getBalance()).to.equal(100);
-		expect(clientController.sam.roles[1].account.getBalance()).to.equal(125);
-		clientController
-			.mainFunc()
-			.then(function() {
-				expect(clientController.sam.roles[0].account.getBalance()).to.equal(100);
-				expect(clientController.sam.roles[1].account.getBalance()).to.equal(125);
-				done();
-			})
-			.fail(function(e) {
-				done(e);
-			});
-		console.log('foo');
-	});
-	it('change results on server by poking an amount', function(done) {
-		RemoteObjectTemplate.serverAssert = function() {
-			expect(serverController.sam.roles[0].account.transactions[0].__changed__).to.equal(true);
-			serverController.sam.roles[0].account.transactions[0].__changed__ = false;
-			serverController.sam.roles[0].account.transactions[0].amount = 200;
-			expect(serverController.sam.roles[0].account.transactions[0].__changed__).to.equal(true);
-		};
-		clientController
-			.mainFunc()
-			.then(function() {
-				expect(clientController.sam.roles[0].account.getBalance()).to.equal(200);
-				done();
-			})
-			.fail(function(e) {
-				done(e);
-			});
-	});
-	it('change results on server by adding a transaction', function(done) {
-		RemoteObjectTemplate.serverAssert = function() {
-			serverController.sam.roles[0].account.credit(100);
-		};
-		clientController
-			.mainFunc()
-			.then(function() {
-				expect(serverController.sam.roles[0].account.getBalance()).to.equal(300);
-				done();
-			})
-			.fail(function(e) {
-				done(e);
-			});
-	});
-	it('change results on server by adding an account', function(done) {
-		RemoteObjectTemplate.serverAssert = function() {
-			serverController.giveSamASecondAccount();
-			serverController.sam.roles[0].account.credit(100);
-		};
-		clientController
-			.mainFunc()
-			.then(function() {
-				expect(serverController.sam.roles[0].account.getBalance()).to.equal(400);
-				expect(serverController.sam.roles[2].account.address.lines[0]).to.equal('Plantana');
-				done();
-			})
-			.fail(function(e) {
-				done(e);
-			});
-	});
+	// it('pass object graph to server and return', function(done) {
+	// 	RemoteObjectTemplate.serverAssert = function() {
+	// 		expect(serverController.sam.roles[0].account.getBalance()).to.equal(100);
+	// 		expect(serverController.sam.roles[1].account.getBalance()).to.equal(125);
+	// 		expect(serverController.preServerCallObjects['Controller']).to.equal(true);
+	// 		serverController.sam.amorphic.logger.warn({}, 'kicking the bucket');
+	// 	};
+	// 	expect(clientController.sam.roles[0].account.getBalance()).to.equal(100);
+	// 	expect(clientController.sam.roles[1].account.getBalance()).to.equal(125);
+	// 	clientController
+	// 		.mainFunc()
+	// 		.then(function() {
+	// 			expect(clientController.sam.roles[0].account.getBalance()).to.equal(100);
+	// 			expect(clientController.sam.roles[1].account.getBalance()).to.equal(125);
+	// 			done();
+	// 		})
+	// 		.fail(function(e) {
+	// 			done(e);
+	// 		});
+	// 	console.log('foo');
+	// });
+	// it('change results on server by poking an amount', function(done) {
+	// 	RemoteObjectTemplate.serverAssert = function() {
+	// 		expect(serverController.sam.roles[0].account.transactions[0].__changed__).to.equal(true);
+	// 		serverController.sam.roles[0].account.transactions[0].__changed__ = false;
+	// 		serverController.sam.roles[0].account.transactions[0].amount = 200;
+	// 		expect(serverController.sam.roles[0].account.transactions[0].__changed__).to.equal(true);
+	// 	};
+	// 	clientController
+	// 		.mainFunc()
+	// 		.then(function() {
+	// 			expect(clientController.sam.roles[0].account.getBalance()).to.equal(200);
+	// 			done();
+	// 		})
+	// 		.fail(function(e) {
+	// 			done(e);
+	// 		});
+	// });
+	// it('change results on server by adding a transaction', function(done) {
+	// 	RemoteObjectTemplate.serverAssert = function() {
+	// 		serverController.sam.roles[0].account.credit(100);
+	// 	};
+	// 	clientController
+	// 		.mainFunc()
+	// 		.then(function() {
+	// 			expect(serverController.sam.roles[0].account.getBalance()).to.equal(300);
+	// 			done();
+	// 		})
+	// 		.fail(function(e) {
+	// 			done(e);
+	// 		});
+	// });
+	// it('change results on server by adding an account', function(done) {
+	// 	RemoteObjectTemplate.serverAssert = function() {
+	// 		serverController.giveSamASecondAccount();
+	// 		serverController.sam.roles[0].account.credit(100);
+	// 	};
+	// 	clientController
+	// 		.mainFunc()
+	// 		.then(function() {
+	// 			expect(serverController.sam.roles[0].account.getBalance()).to.equal(400);
+	// 			expect(serverController.sam.roles[2].account.address.lines[0]).to.equal('Plantana');
+	// 			done();
+	// 		})
+	// 		.fail(function(e) {
+	// 			done(e);
+	// 		});
+	// });
 
-	it('throw an execption', function(done) {
-		RemoteObjectTemplate.serverAssert = function() {
-			throw 'get stuffed';
-		};
-		clientController
-			.mainFunc()
-			.then(
-				function() {
-					expect('Should not be here').to.equal(false);
-				},
-				function(e) {
-					expect(e.message).to.equal('get stuffed');
-					done();
-				}
-			)
-			.fail(function(e) {
-				done(e);
-			});
-	});
-	it('can get a synchronization error', function(done) {
-		RemoteObjectTemplate.serverAssert = function() {
-			throw 'get stuffed';
-		};
-		clientController
-			.mainFunc()
-			.then(
-				function() {
-					expect('Should not be here').to.equal(false);
-				},
-				function(e) {
-					expect(e.message).to.equal('get stuffed');
-					done();
-				}
-			)
-			.fail(function(e) {
-				done(e);
-			});
-	});
-	it('can get a synchronization error from overlapping calls', function(done) {
-		this.timeout(7000);
-		RemoteObjectTemplate.serverAssert = function() {
-			return Q.delay(1000);
-		};
-		clientController.mainFunc().then(function() {
-			expect('Should not be here').to.equal(false);
-		});
-		clientController
-			.mainFunc()
-			.then(
-				function() {
-					expect('Should not be here').to.equal(false);
-				},
-				function(e) {
-					console.log(e);
-					Q.delay(1000).then(function() {
-						done();
-					});
-				}
-			)
-			.fail(function(e) {
-				done(e);
-			});
-	});
+	// it('throw an execption', function(done) {
+	// 	RemoteObjectTemplate.serverAssert = function() {
+	// 		throw 'get stuffed';
+	// 	};
+	// 	clientController
+	// 		.mainFunc()
+	// 		.then(
+	// 			function() {
+	// 				expect('Should not be here').to.equal(false);
+	// 			},
+	// 			function(e) {
+	// 				expect(e.message).to.equal('get stuffed');
+	// 				done();
+	// 			}
+	// 		)
+	// 		.fail(function(e) {
+	// 			done(e);
+	// 		});
+	// });
+	// it('can get a synchronization error', function(done) {
+	// 	RemoteObjectTemplate.serverAssert = function() {
+	// 		throw 'get stuffed';
+	// 	};
+	// 	clientController
+	// 		.mainFunc()
+	// 		.then(
+	// 			function() {
+	// 				expect('Should not be here').to.equal(false);
+	// 			},
+	// 			function(e) {
+	// 				expect(e.message).to.equal('get stuffed');
+	// 				done();
+	// 			}
+	// 		)
+	// 		.fail(function(e) {
+	// 			done(e);
+	// 		});
+	// });
+	// it('can get a synchronization error from overlapping calls', function(done) {
+	// 	this.timeout(7000);
+	// 	RemoteObjectTemplate.serverAssert = function() {
+	// 		return Q.delay(1000);
+	// 	};
+	// 	clientController.mainFunc().then(function() {
+	// 		expect('Should not be here').to.equal(false);
+	// 	});
+	// 	clientController
+	// 		.mainFunc()
+	// 		.then(
+	// 			function() {
+	// 				expect('Should not be here').to.equal(false);
+	// 			},
+	// 			function(e) {
+	// 				console.log(e);
+	// 				Q.delay(1000).then(function() {
+	// 					done();
+	// 				});
+	// 			}
+	// 		)
+	// 		.fail(function(e) {
+	// 			done(e);
+	// 		});
+	// });
 
-	it('change tracking to work with arrays', function(done) {
-		RemoteObjectTemplate.serverAssert = function() {
-			expect(serverController.sam.roles[0].account.__changed__).to.equal(true);
-			serverController.sam.roles[0].account.__changed__ = false;
-			serverController.sam.roles[0].account.debit(50);
-			expect(serverController.sam.roles[0].account.__changed__).to.equal(false);
-			ServerObjectTemplate.MarkChangedArrayReferences();
-			expect(serverController.sam.roles[0].account.__changed__).to.equal(true);
-		};
-		var balance = clientController.sam.roles[0].account.getBalance();
-		serverController.sam.roles[0].account.__changed__ = false;
-		clientController.sam.roles[0].account.debit(50);
-		clientController
-			.mainFunc()
-			.then(function() {
-				expect(serverController.sam.roles[0].account.getBalance()).to.equal(balance - 100);
-				done();
-			})
-			.fail(function(e) {
-				done(e);
-			});
-	});
+	// it('change tracking to work with arrays', function(done) {
+	// 	RemoteObjectTemplate.serverAssert = function() {
+	// 		expect(serverController.sam.roles[0].account.__changed__).to.equal(true);
+	// 		serverController.sam.roles[0].account.__changed__ = false;
+	// 		serverController.sam.roles[0].account.debit(50);
+	// 		expect(serverController.sam.roles[0].account.__changed__).to.equal(false);
+	// 		ServerObjectTemplate.MarkChangedArrayReferences();
+	// 		expect(serverController.sam.roles[0].account.__changed__).to.equal(true);
+	// 	};
+	// 	var balance = clientController.sam.roles[0].account.getBalance();
+	// 	serverController.sam.roles[0].account.__changed__ = false;
+	// 	clientController.sam.roles[0].account.debit(50);
+	// 	clientController
+	// 		.mainFunc()
+	// 		.then(function() {
+	// 			expect(serverController.sam.roles[0].account.getBalance()).to.equal(balance - 100);
+	// 			done();
+	// 		})
+	// 		.fail(function(e) {
+	// 			done(e);
+	// 		});
+	// });
 
-	it('check onclient rules', function(done) {
-		RemoteObjectTemplate.serverAssert = function() {
-			serverController.setAllClientRuleCheckFalgsonServer();
-		};
-		clientController
-			.mainFunc()
-			.then(function() {
-				expect(clientController.onClientFalse).to.equal(false);
-				expect(clientController.onClientTrue).to.equal(true);
-				expect(clientController.onClientNotRightApp).to.equal(false);
-				expect(clientController.onClientWithApp).to.equal(true);
-				done();
-			})
-			.fail(function(e) {
-				done(e);
-			});
-	});
+	// it('check onclient rules', function(done) {
+	// 	RemoteObjectTemplate.serverAssert = function() {
+	// 		serverController.setAllClientRuleCheckFalgsonServer();
+	// 	};
+	// 	clientController
+	// 		.mainFunc()
+	// 		.then(function() {
+	// 			expect(clientController.onClientFalse).to.equal(false);
+	// 			expect(clientController.onClientTrue).to.equal(true);
+	// 			expect(clientController.onClientNotRightApp).to.equal(false);
+	// 			expect(clientController.onClientWithApp).to.equal(true);
+	// 			done();
+	// 		})
+	// 		.fail(function(e) {
+	// 			done(e);
+	// 		});
+	// });
 
-	it('check onserver rules', function(done) {
-		clientController.setAllServerRuleCheckFalgsonClient();
+	// it('check onserver rules', function(done) {
+	// 	clientController.setAllServerRuleCheckFalgsonClient();
 
-		RemoteObjectTemplate.serverAssert = function() {
-			expect(serverController.onServerFalse).to.equal(false);
-			expect(serverController.onServerTrue).to.equal(true);
-			expect(serverController.onServerNotRightApp).to.equal(false);
-			expect(serverController.onServerWithApp).to.equal(true);
-			done();
-		};
+	// 	RemoteObjectTemplate.serverAssert = function() {
+	// 		expect(serverController.onServerFalse).to.equal(false);
+	// 		expect(serverController.onServerTrue).to.equal(true);
+	// 		expect(serverController.onServerNotRightApp).to.equal(false);
+	// 		expect(serverController.onServerWithApp).to.equal(true);
+	// 		done();
+	// 	};
 
-		clientController.mainFunc();
-	});
+	// 	clientController.mainFunc();
+	// });
 
 	it('check serverValidationRules to succeed', function(done) {
 		clientController.setAllServerRuleCheckFalgsonClient();
