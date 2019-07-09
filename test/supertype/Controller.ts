@@ -11,6 +11,8 @@ import { Account } from './Account';
 import { Address } from './Address';
 declare function require(name: string);
 import { expect } from 'chai';
+
+import * as Q from 'q';
 //expect(Dummy['__toClient__']).to.equal(false);//
 //expect(Dummy['__toServer__']).to.equal(true);
 
@@ -28,19 +30,21 @@ export class Controller extends Supertype {
 
 	@remote({
 		on: 'server',
-		onServerValidator: (controller: Controller, ...args: any[]) => {
+		serverValidation: async (controller: Controller, ...args: any[]) => {
 			controller.serverValidatorCounter = args.length;
-			console.log(args);
+			console.log('-------IN SERVER VALIDATOR FUNCTION------');
 			if (args.length === 3 && args[0] === 'first' && args[1] === 'second' && args[2] === 'third') {
 				controller.argumentValidator = true;
+				await Q.delay(1500);
 				return true;
 			}
 			controller.argumentValidator = false;
+			await Q.delay(1500);
 			return false;
 		}
 	})
 	testServerValidation(...args) {
-		console.log('------IN TEST SERVER VALIDATION-----');
+		console.log('------IN REMOTE FUNCTION-----');
 		return ObjectTemplate.serverAssert();
 	}
 

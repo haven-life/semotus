@@ -599,14 +599,12 @@
 			var remoteObject = session.objects[remoteCall.id];
 
 			this.logger.info(loggerObject, remoteCall.name);
-
 			if (!validationResult) {
 				return false;
 			} else if (this.role === 'server' && remoteObject[remoteCall.name].serverValidation) {
 				var args = this._extractArguments(remoteCall);
-				var validationArgs = args.unshift(remoteObject);
-
-				return remoteObject[remoteCall.name].serverValidation.apply(null, validationArgs);
+				args.unshift(remoteObject);
+				return remoteObject[remoteCall.name].serverValidation.apply(null, args);
 			} else {
 				return true;
 			}
@@ -1184,7 +1182,6 @@
 			if (role === 'server') {
 				propertyValue.serverValidation = serverValidation;
 			}
-
 			return propertyValue;
 		} else {
 			// Function wrapper it self will return a promise wrapped to setup the this pointer
@@ -3004,7 +3001,7 @@
 			}
 
 			// function that we call to validate any changes for remote calls
-			var remoteValidator = defineProperty.onServerValidator;
+			var remoteValidator = defineProperty.serverValidation;
 
 			return function(target, propertyName, descriptor) {
 				descriptor.value = objectTemplate._setupFunction(
@@ -3012,7 +3009,7 @@
 					descriptor.value,
 					defineProperty.on,
 					defineProperty.validate,
-					defineProperty.serverValidation,
+					remoteValidator,
 					defineProperty.target
 				);
 
