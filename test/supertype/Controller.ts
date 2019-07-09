@@ -30,6 +30,7 @@ export class Controller extends Supertype {
 		on: 'server',
 		onServerValidator: (controller: Controller, ...args: any[]) => {
 			controller.serverValidatorCounter = args.length;
+			console.log(args);
 			if (args.length === 3 && args[0] === 'first' && args[1] === 'second' && args[2] === 'third') {
 				controller.argumentValidator = true;
 				return true;

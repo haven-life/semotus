@@ -316,7 +316,7 @@ describe('Typescript Banking Example', function() {
 			done();
 		};
 
-		clientController.testServerValidation();
+		clientController.testServerValidation('first', 'second', 'third');
 	});
 
 	it('check serverValidationRules to fail', function(done) {
