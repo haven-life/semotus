@@ -1965,7 +1965,7 @@
 			return value.__id__;
 		} else if (value instanceof Date) {
 			return value.getTime();
-		} else if (typeof value == 'number' && isNaN(value)) {
+		} else if (typeof value === 'number' && isNaN(value)) {
 			return null;
 		} else {
 			if (value) {
