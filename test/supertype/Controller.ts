@@ -16,9 +16,6 @@ import * as Q from 'q';
 //expect(Dummy['__toClient__']).to.equal(false);//
 //expect(Dummy['__toServer__']).to.equal(true);
 
-// export let serverValidatorCounter = 0;
-// export let argumentValidator = false;
-
 @supertypeClass
 export class Controller extends Supertype {
 	@remote({

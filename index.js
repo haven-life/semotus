@@ -979,26 +979,26 @@
 	};
 
 	/**
-     * Pick up all messages
-     *
-     * @param {unknown} type unknown
-     * @param {unknown} subscriptionId unknown
-     *
-     * @returns {[]} the messages in an array
-     *
-     RemoteObjectTemplate.getMessages = function(sessionId) {
-        const session = this._getSession(sessionId);
-        const messages = [];
-        const message;
-        while (message = session.remoteCalls.shift())
-        {
-            const remoteCallId = session.nextPendingRemoteCallId++;
-            message.remoteCallId = remoteCallId;
-            messages.push(message);
-        }
-        return messages;
+ * Pick up all messages
+ *
+ * @param {unknown} type unknown
+ * @param {unknown} subscriptionId unknown
+ *
+ * @returns {[]} the messages in an array
+ *
+ RemoteObjectTemplate.getMessages = function(sessionId) {
+    const session = this._getSession(sessionId);
+    const messages = [];
+    const message;
+    while (message = session.remoteCalls.shift())
+    {
+        const remoteCallId = session.nextPendingRemoteCallId++;
+        message.remoteCallId = remoteCallId;
+        messages.push(message);
     }
-     */
+    return messages;
+}
+ */
 	RemoteObjectTemplate.getChangeGroup = function getChangeGroup(type, subscriptionId) {
 		return this._getSubscription(subscriptionId).log[type];
 	};
