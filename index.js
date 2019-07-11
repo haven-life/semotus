@@ -581,11 +581,11 @@
 		/**
 		 * Apply function specific custom serverSide validation functions
 		 *
-		 * @param {boolean} validationResult - Result of previous validation step (applyChangesAndValidateCall)
+		 * @param {boolean} isValid - Result of previous validation step (applyChangesAndValidateCall)
 		 * @returns {boolean} True if passed function
 		 */
-		function customValidation(validationResult) {
-			var loggerObject = {
+		function customValidation(isValid) {
+			let loggerObject = {
 				component: 'semotus',
 				module: 'processCall',
 				activity: 'customValidation',
@@ -596,14 +596,16 @@
 				}
 			};
 
-			var remoteObject = session.objects[remoteCall.id];
+			let remoteObject = session.objects[remoteCall.id];
 
 			this.logger.info(loggerObject, remoteCall.name);
-			if (!validationResult) {
+
+			if (!isValid) {
 				return false;
 			} else if (this.role === 'server' && remoteObject[remoteCall.name].serverValidation) {
-				var args = this._extractArguments(remoteCall);
+				let args = this._extractArguments(remoteCall);
 				args.unshift(remoteObject);
+
 				return remoteObject[remoteCall.name].serverValidation.apply(null, args);
 			} else {
 				return true;
@@ -619,7 +621,7 @@
 		 * @returns {unknown} unknown
 		 */
 		function callIfValid(isValid) {
-			var loggerObject = {
+			let loggerObject = {
 				component: 'semotus',
 				module: 'processCall',
 				activity: 'callIfValid',
@@ -642,7 +644,7 @@
 				throw new Error(remoteCall.name + ' refused');
 			}
 
-			var args = this._extractArguments(remoteCall);
+			let args = this._extractArguments(remoteCall);
 
 			return obj[remoteCall.name].apply(obj, args);
 		}
@@ -3001,7 +3003,7 @@
 			}
 
 			// function that we call to validate any changes for remote calls
-			var remoteValidator = defineProperty.serverValidation;
+			let remoteValidator = defineProperty.serverValidation;
 
 			return function(target, propertyName, descriptor) {
 				descriptor.value = objectTemplate._setupFunction(
