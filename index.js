@@ -704,134 +704,131 @@
 		}
 
 		/**
-		 * Handle errors by returning an apropriate message.  In all cases changes sent back though they
-		 *
-		 * @param {unknown} err unknown
-		 *
-		 * @returns {unknown} unknown
+		 *  Helper function to log amorphic errors.
+		 * @param {*} logger
+		 * @param {*} activity
+		 * @param {*} message
+		 * @param {*} logType
+		 * @param {*} logString
 		 */
-		function postCallFailure(err) {
-			if (err == 'Sync Error') {
-				this.logger.error(
-					{
-						component: 'semotus',
-						module: 'processCall',
-						activity: 'postCall.syncError',
-						data: {
-							call: remoteCall.name,
-							callTime: logTime(),
-							sequence: remoteCall.sequence
-						}
-					},
-					remoteCall.name
+		function postCallErrorLog(logger, activity, message, logType, logString) {
+			let logBody = {
+				component: 'semotus',
+				module: 'processCall.failure',
+				data: {
+					call: remoteCall.name,
+					callTime: logTime(),
+					sequence: remoteCall.sequence
+				}
+			};
+
+			logBody.activity = activity;
+
+			if (logger.data) {
+				logBody.data.message = message;
+			}
+
+			logger[logType](logBody, logString);
+		}
+
+		/**
+		 * Helper function to identify if there's a postServerErrorHandler callback on the base controller
+		 * @param {*} controller
+		 */
+		function resolveErrorHandler(controller) {
+			if (controller && controller['postServerErrorHandler']) {
+				let errorType = packageChangesPayload.type;
+				let functionName = remoteCall.name;
+				let remoteCallId = remoteCallId;
+
+				return controller['postServerErrorHandler'].bind(
+					controller,
+					errorType,
+					functionName,
+					remoteCallId,
+					changes
 				);
-
-				packageChanges.call(this, {
-					type: 'response',
-					sync: false,
-					changes: '',
-					remoteCallId: remoteCallId
-				});
-			} else if (err.message == 'Update Conflict') {
-				// Not this may be caught in the trasport (e.g. Amorphic) and retried)
-				if (callContext.retries++ < 3) {
-					this.logger.warn(
-						{
-							component: 'semotus',
-							module: 'processCall',
-							activity: 'postCall.updateConflict',
-							data: {
-								call: remoteCall.name,
-								callTime: logTime(),
-								sequence: remoteCall.sequence
-							}
-						},
-						remoteCall.name
-					);
-
-					return Q.delay(callContext.retries * 1000).then(retryCall.bind(this));
-				} else {
-					this.logger.error(
-						{
-							component: 'semotus',
-							module: 'processCall',
-							activity: 'postCall.updateConflict',
-							data: {
-								call: remoteCall.name,
-								callTime: logTime(),
-								sequence: remoteCall.sequence
-							}
-						},
-						remoteCall.name
-					);
-
-					packageChanges.call(this, {
-						type: 'retry',
-						sync: false,
-						remoteCallId: remoteCallId
-					});
-				}
 			} else {
-				if (!(err instanceof Error)) {
-					this.logger.info(
-						{
-							component: 'semotus',
-							module: 'processCall',
-							activity: 'postCall.error',
-							data: {
-								message: JSON.stringify(err),
-								call: remoteCall.name,
-								callTime: logTime(),
-								sequence: remoteCall.sequence
-							}
-						},
-						remoteCall.name
-					);
-				} else {
-					if (err.stack) {
-						this.logger.error(
-							{
-								component: 'semotus',
-								module: 'processCall',
-								activity: 'postCall.exception',
-								data: {
-									message: err.message,
-									call: remoteCall.name,
-									callTime: logTime(),
-									sequence: remoteCall.sequence
-								}
-							},
-							'Exception in ' + remoteCall.name + ' - ' + err.message + (' ' + err.stack)
-						);
-					} else {
-						this.logger.error(
-							{
-								component: 'semotus',
-								module: 'processCall',
-								activity: 'postCall.exception',
-								data: {
-									message: err.message,
-									call: remoteCall.name,
-									callTime: logTime(),
-									sequence: remoteCall.sequence
-								}
-							},
-							'Exception in ' + remoteCall.name + ' - ' + err.message
-						);
-					}
-				}
-
-				packageChanges.call(this, {
-					type: 'error',
-					sync: true,
-					value: getError.call(this, err),
-					name: remoteCall.name,
-					remoteCallId: remoteCallId
-				});
+				return undefined;
 			}
 		}
 
 		/**
+		 * Handle errors by returning an apropriate message.  In all cases changes sent back though they
+		 *
+		 * @param {unknown} err unknown
+		 *
+		 * @returns {unknown} A Promise
+		 */
+		function postCallFailure(err) {
+			let logString = '';
+
+			let packageChangesPayload = {};
+
+			let updateConflictRetry = false;
+
+			if (err == 'Sync Error') {
+				postCallErrorLog(this.logger, 'postCall.syncError', undefined, 'error', remoteCall.name);
+				packageChangesPayload = {
+					type: 'response',
+					sync: false,
+					changes: ''
+				};
+			} else if (err.message == 'Update Conflict') {
+				// Not this may be caught in the trasport (e.g. Amorphic) and retried)
+
+				if (callContext.retries++ < 3) {
+					postCallErrorLog(this.logger, 'postCall.updateConflict', undefined, 'warn', remoteCall.name);
+					updateConflictRetry = true;
+				} else {
+					postCallErrorLog(this.logger, 'postCall.updateConflict', undefined, 'error', remoteCall.name);
+
+					packageChangesPayload = {
+						type: 'retry',
+						sync: false
+					};
+				}
+			} else {
+				if (!(err instanceof Error)) {
+					postCallErrorLog(this.logger, 'postCall.error', JSON.stringify(err), 'info', remoteCall.name);
+				} else {
+					if (err.stack) {
+						logString = 'Exception in ' + remoteCall.name + ' - ' + err.message + (' ' + err.stack);
+						postCallErrorLog(this.logger, 'postCall.exception', err.message, 'error', logString);
+					} else {
+						logString = 'Exception in ' + remoteCall.name + ' - ' + err.message;
+						postCallErrorLog(this.logger, 'postCall.exception', err.message, 'error', logString);
+					}
+				}
+
+				packageChangesPayload = {
+					type: 'error',
+					sync: true,
+					value: getError.call(this, err),
+					name: remoteCall.name
+				};
+			}
+
+			Object.assign(packageChangesPayload, { remoteCallId: remoteCallId });
+
+			const errorHandler = resolveErrorHandler(this.controller);
+
+			let promise = Promise.resolve();
+
+			if (errorHandler) {
+				promise = promise.then(errorHandler);
+			}
+
+			if (updateConflictRetry) {
+				return promise.then(Q.delay.bind(null, callContext.retries * 1000)).then(retryCall.bind(this));
+			} else {
+				return promise.then(packageChanges.bind(this, packageChangesPayload));
+			}
+		}
+
+		/**
+		 * Helper function to
+		 *
 		 * Distinquish between an actual error (will throw an Error object) and a string that the application may
 		 * throw which is to get piped back to the caller.  For an actual error we want to log the stack trace
 		 *
