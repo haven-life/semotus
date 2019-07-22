@@ -1,3 +1,5 @@
+## 3.2.0
+* Added a postServerErrorHandler callback for verifying errors on remote functions
 ## 3.1.0
 * Cleaned up a lot of files with better error logging and formatting
 * Added server validator function for remote functions. Within the remote decorator add another parameter for `serverValidation`, which takes an async function as a callback whose parameters are the controller and all other argument parameters for the remote function in the order that they are defined in the remote function's definition.
