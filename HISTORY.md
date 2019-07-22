@@ -1,4 +1,5 @@
 ## 3.2.0
+* Updated some packages (using npm audit)
 * Added a postServerErrorHandler callback for verifying errors on remote functions
 ## 3.1.0
 * Cleaned up a lot of files with better error logging and formatting
