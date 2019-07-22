@@ -735,18 +735,23 @@
 		 * Helper function to identify if there's a postServerErrorHandler callback on the base controller
 		 * @param {*} controller
 		 */
-		function resolveErrorHandler(controller) {
+		function resolveErrorHandler(controller, type, remoteCall, remoteCallId, callContext, changeString) {
 			if (controller && controller['postServerErrorHandler']) {
-				let errorType = packageChangesPayload.type;
+				let errorType = type;
 				let functionName = remoteCall.name;
-				let remoteCallId = remoteCallId;
+				let obj = undefined;
+				if (session.objects[remoteCall.id]) {
+					obj = session.objects[remoteCall.id];
+				}
 
 				return controller['postServerErrorHandler'].bind(
 					controller,
 					errorType,
-					functionName,
 					remoteCallId,
-					changes
+					obj,
+					functionName,
+					callContext,
+					changeString
 				);
 			} else {
 				return undefined;
@@ -811,12 +816,19 @@
 
 			Object.assign(packageChangesPayload, { remoteCallId: remoteCallId });
 
-			const errorHandler = resolveErrorHandler(this.controller);
+			const errorHandler = resolveErrorHandler(
+				this.controller,
+				packageChangesPayload.type,
+				remoteCall,
+				remoteCallId,
+				callContext,
+				this.changeString
+			);
 
 			let promise = Promise.resolve();
 
 			if (errorHandler) {
-				promise = promise.then(errorHandler);
+				promise = promise.then(errorHandler.bind(this));
 			}
 
 			if (updateConflictRetry) {
