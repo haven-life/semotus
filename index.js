@@ -733,9 +733,10 @@
 
 		/**
 		 * Helper function to identify if there's a postServerErrorHandler callback on the base controller
+		 * If there is, we execute the handler, and if we catch an error in the handler, we propogate it up to the logger.
 		 * @param {*} controller
 		 */
-		function resolveErrorHandler(controller, type, remoteCall, remoteCallId, callContext, changeString) {
+		function resolveErrorHandler(logger, controller, type, remoteCall, remoteCallId, callContext, changeString) {
 			if (controller && controller['postServerErrorHandler']) {
 				let errorType = type;
 				let functionName = remoteCall.name;
@@ -744,17 +745,33 @@
 					obj = session.objects[remoteCall.id];
 				}
 
-				return controller['postServerErrorHandler'].bind(
-					controller,
-					errorType,
-					remoteCallId,
-					obj,
-					functionName,
-					callContext,
-					changeString
-				);
+				return Promise.resolve()
+					.then(
+						controller['postServerErrorHandler'].bind(
+							controller,
+							errorType,
+							remoteCallId,
+							obj,
+							functionName,
+							callContext,
+							changeString
+						)
+					)
+					.then(
+						function() {
+							// no error on error handler callback
+						},
+						function(error) {
+							logger.error('User defined postServerErrorHandler threw an error');
+							if (error.message) {
+								logger.error(error.message);
+							} else {
+								logger.error(JSON.stringify(error));
+							}
+						}
+					);
 			} else {
-				return undefined;
+				return Promise.resolve();
 			}
 		}
 
@@ -816,7 +833,8 @@
 
 			Object.assign(packageChangesPayload, { remoteCallId: remoteCallId });
 
-			const errorHandler = resolveErrorHandler(
+			const errorHandlerPromise = resolveErrorHandler(
+				this.logger,
 				this.controller,
 				packageChangesPayload.type,
 				remoteCall,
@@ -825,16 +843,12 @@
 				this.changeString
 			);
 
-			let promise = Promise.resolve();
-
-			if (errorHandler) {
-				promise = promise.then(errorHandler.bind(this));
-			}
-
 			if (updateConflictRetry) {
-				return promise.then(Q.delay.bind(null, callContext.retries * 1000)).then(retryCall.bind(this));
+				return errorHandlerPromise
+					.then(Q.delay.bind(null, callContext.retries * 1000))
+					.then(retryCall.bind(this));
 			} else {
-				return promise.then(packageChanges.bind(this, packageChangesPayload));
+				return errorHandlerPromise.then(packageChanges.bind(this, packageChangesPayload));
 			}
 		}
 
