@@ -744,6 +744,14 @@
 				if (session.objects[remoteCall.id]) {
 					obj = session.objects[remoteCall.id];
 				}
+				let logBody = {
+					component: 'semotus',
+					module: 'processCall.failure',
+					activity: 'postCall.resolveErrorHandler',
+					data: {
+						call: remoteCall.name
+					}
+				};
 
 				return Promise.resolve()
 					.then(
@@ -762,12 +770,14 @@
 							// no error on error handler callback
 						},
 						function(error) {
-							logger.error('User defined postServerErrorHandler threw an error');
 							if (error.message) {
+								logBody.data.message = error.message;
 								logger.error(error.message);
 							} else {
-								logger.error(JSON.stringify(error));
+								logBody.data.message = JSON.stringify(error);
 							}
+
+							logger.error(logBody, 'User defined postServerErrorHandler threw an error');
 						}
 					);
 			} else {
