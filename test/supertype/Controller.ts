@@ -99,6 +99,8 @@ export class Controller extends Supertype {
 		this.onServerFalse = this.onServerTrue = this.onServerNotRightApp = this.onServerWithApp = true;
 	}
 
+	hitMaxRetries: boolean = false;
+
 	constructor() {
 		super();
 
@@ -177,6 +179,11 @@ export class Controller extends Supertype {
 		else if (functionName === 'tryThrowingAnErrorFromErrorHandler') {
 			throw new Error('Callback is throwing an error');
 		}
+		else if (errorType === 'retry' && callContext.retries >= 3 && functionName === 'testUpdateConflictErrorHandling') {
+			// is an update conflict, throw an error if callContext.retries is >= 3, indicating we've maxed out retries
+			this.hitMaxRetries = true;
+			throw new Error('Hit max # of retries'); // log that we have hit the max retries for this function
+		}
 	}
 
 	@remote({ on: 'server' })
@@ -188,6 +195,11 @@ export class Controller extends Supertype {
 	@remote({ on: 'server' })
 	tryThrowingAnErrorFromErrorHandler() {
 		throw new Error('yo');
+	}
+
+	@remote({ on: 'server' })
+	testUpdateConflictErrorHandling() {
+		return ObjectTemplate.serverAssert();
 	}
 
 	asyncErrorHandlerCalled: boolean = false;

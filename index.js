@@ -809,12 +809,16 @@
 			} else if (err.message == 'Update Conflict') {
 				// Not this may be caught in the trasport (e.g. Amorphic) and retried)
 
+				// increment callContext.retries after checking if < 3. Should retry 3 times.
 				if (callContext.retries++ < 3) {
 					postCallErrorLog(this.logger, 'postCall.updateConflict', undefined, 'warn', remoteCall.name);
 					updateConflictRetry = true;
+					// The following assignment is only used for the error handler
+					packageChangesPayload = {
+						type: 'retry'
+					};
 				} else {
 					postCallErrorLog(this.logger, 'postCall.updateConflict', undefined, 'error', remoteCall.name);
-
 					packageChangesPayload = {
 						type: 'retry',
 						sync: false

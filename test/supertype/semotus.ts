@@ -393,4 +393,27 @@ describe('Typescript Banking Example', function () {
 				done(e);
 			});
 	});
+
+	it('Mocks Update Conflict and then retries three times (tries 4 times total) and postServerErrorHandler updates Update Conflict count and throws a log only error on 3rd time', function (done) {
+		this.timeout(8000);
+
+		clientController.setAllServerRuleCheckFalgsonClient();
+		let retries = 0;
+		RemoteObjectTemplate.serverAssert = function () {
+			if (retries < 3) {
+				retries++;
+				throw new Error('Update Conflict');
+			}
+		};
+
+		clientController
+			.testUpdateConflictErrorHandling()
+			.then(
+				function () {
+					expect(serverController.hitMaxRetries).to.equal(true);
+					expect(retries).to.equal(3);
+					done();
+				}
+			);
+	});
 });
