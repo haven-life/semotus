@@ -170,12 +170,6 @@ export class Controller extends Supertype {
 	 * @memberof Controller
 	 */
 	async postServerErrorHandler(errorType, remoteCallId, obj, functionName, callContext, changeString) {
-		console.log('------IN ERROR CALLBACK-------');
-		console.log(errorType);
-		console.log(functionName);
-		console.log(remoteCallId);
-		console.log(changeString);
-
 		if (functionName === 'testAsyncPostServerError') {
 			await Q.delay(1500);
 			this.asyncErrorHandlerCalled = true;

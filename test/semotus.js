@@ -311,11 +311,6 @@ function createTemplates(objectTemplate) {
             return !failServer;
         },
         postServerErrorHandler(errorType, remoteCallId, obj, functionName, callContext, changeString) {
-            console.log('------IN ERROR CALLBACK-------');
-            console.log(errorType);
-            console.log(functionName);
-            console.log(remoteCallId);
-    
             if (errCallbackHit) {
                 return Q.delay(1500).then(function() { this.asyncErrorHandlerCalled = true});
             }
