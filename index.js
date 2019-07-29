@@ -799,7 +799,7 @@
 
 			let updateConflictRetry = false;
 
-			if (err == 'Sync Error') {
+			if (err === 'Sync Error') {
 				postCallErrorLog(this.logger, 'postCall.syncError', undefined, 'error', remoteCall.name);
 				packageChangesPayload = {
 					type: 'response',
@@ -830,11 +830,11 @@
 				} else {
 					if (err.stack) {
 						logString = 'Exception in ' + remoteCall.name + ' - ' + err.message + (' ' + err.stack);
-						postCallErrorLog(this.logger, 'postCall.exception', err.message, 'error', logString);
 					} else {
 						logString = 'Exception in ' + remoteCall.name + ' - ' + err.message;
-						postCallErrorLog(this.logger, 'postCall.exception', err.message, 'error', logString);
 					}
+
+					postCallErrorLog(this.logger, 'postCall.exception', err.message, 'error', logString);
 				}
 
 				packageChangesPayload = {
