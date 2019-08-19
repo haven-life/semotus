@@ -84,6 +84,7 @@ export class Controller extends Supertype {
 
 	serverValidatorCounter = 0;
 	argumentValidator = false;
+	saveFnName: string;
 
 	@property({ toServer: ['NoServerRule'] })
 	onServerNotRightApp: boolean = false;
@@ -149,7 +150,8 @@ export class Controller extends Supertype {
 		this.karen = karen;
 		this.ashling = ashling;
 	}
-	preServerCall(changeCount, objectsChanged) {
+	preServerCall(changeCount, objectsChanged, callContext, forceUpdate: undefined | boolean, functionName) {
+		this.saveFnName = functionName;
 		for (var templateName in objectsChanged) this.preServerCallObjects[templateName] = true;
 	}
 	postServerCall() {
