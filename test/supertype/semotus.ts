@@ -307,6 +307,17 @@ describe('Typescript Banking Example', function () {
 		clientController.mainFunc();
 	});
 
+	it('check preServerCall parameter for functionName', function (done) {
+		clientController.setAllServerRuleCheckFalgsonClient();
+
+		RemoteObjectTemplate.serverAssert = function () {
+			expect(serverController.saveFnName).to.equal('mainFunc');
+			done();
+		};
+
+		clientController.mainFunc();
+	});
+
 	it('check serverValidationRules to succeed', function (done) {
 		clientController.setAllServerRuleCheckFalgsonClient();
 
