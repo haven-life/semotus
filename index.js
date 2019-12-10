@@ -1400,6 +1400,12 @@
 					if (!defineProperty.isVirtual) {
 						this['__' + prop] = value;
 					}
+
+					// if we've marked a property as having sensitive data in the consuming application, as soon as we make the change
+					// let's remove its shadow propery from memory.
+					if(defineProperty.sensitiveData) {
+						this['__' + prop] = undefined;
+					}
 				};
 
 				function transform(data) {
