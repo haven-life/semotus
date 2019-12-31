@@ -80,7 +80,6 @@ export interface Semotus {
     _fromTransport: (obj) => any;
     _extractArguments: (remoteCall) => any;
     _trimArray: (array) => void;
-    _getSession: (_sid?: any) => Session;
     _deleteChangeGroups: (type) => void;
     _getSubscriptions: (sessionId) => Subscriptions | null;
     _getSubscription: (subscriptionId) => Subscription;
@@ -111,6 +110,7 @@ export interface Semotus {
     nextSubscriptionId: number;
     nextSessionId: number;
 
+    _getSession(_sid?: any): Session;
     subscribe(role: any): number;
 
     setSession(sessionId: any): void;

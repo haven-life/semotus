@@ -23,6 +23,16 @@
  objects created with it's templates.  The synchronization
  */
 
+import {ChangeGroup, Semotus, Subscription} from './HelperTypes';
+import {property, remote, Supertype, supertypeClass} from './decorators';
+import {Bindable, Persistable, Remoteable} from './setupExtends';
+import * as SessionHelpers from './SessionHelpers';
+import * as SubscriptionHelpers from './SubscriptionHelpers';
+import {defer, delay} from './UtilityFunctions';
+
+declare var define;
+
+// @TODO: Check if we attach Promise as a keyword in the webpack build
 (function(root, factory) {
 	'use strict';
 	if (typeof define === 'function' && define.amd) {
@@ -36,7 +46,7 @@
 	'use strict';
 
 	var ObjectTemplate = SupertypeModule.default;
-	const RemoteObjectTemplate = ObjectTemplate._createObject();
+	const RemoteObjectTemplate: Semotus = ObjectTemplate._createObject();
 
 	RemoteObjectTemplate._useGettersSetters = typeof window === 'undefined';
 
@@ -56,7 +66,7 @@
 	RemoteObjectTemplate.nextObjId = 1;
 
 	/**
-	 * Purpose unknown
+	 * @TODELETE
 	 *
 	 * @param {unknown} level unknown
 	 * @param {unknown} data unknown
@@ -100,64 +110,14 @@
 	 *
 	 * @returns {*} unknown
 	 */
-	RemoteObjectTemplate.createSession = function createSession(role, sendMessage, sessionId) {
-		if (!this.sessions) {
-			this.nextSubscriptionId = 0;
-			this.nextSessionId = 1;
-			this.sessions = {};
-		}
-
-		if (!sessionId) {
-			sessionId = this.nextSessionId++;
-		}
-
-		this.setSession(sessionId);
-
-		this.sessions[sessionId] = {
-			subscriptions: {}, // Change listeners
-			sendMessage: sendMessage, // Send message callback
-			sendMessageEnabled: !!sendMessage,
-			remoteCalls: [], // Remote calls queued to go out
-			pendingRemoteCalls: {}, // Remote calls waiting for response
-			nextPendingRemoteCallId: 1,
-			nextSaveSessionId: 1,
-			savedSessionId: 0,
-			nextSubscriptionId: 0,
-			objects: {},
-			nextObjId: 1,
-			dispenseNextId: null // Force next object Id
-		};
-
-		if (role instanceof Array) {
-			for (var ix = 0; ix < role.length; ++ix) {
-				this.subscribe(role[ix]);
-			}
-
-			this.role = role[1];
-		} else {
-			this.subscribe(role);
-			this.role = role;
-		}
-
-		return sessionId;
-	};
+	RemoteObjectTemplate.createSession = SessionHelpers.createSession.bind(null, this);
 
 	/**
 	 * Remove the session from the sessions map, rejecting any outstanding promises
 	 *
 	 * @param {unknown} sessionId unknown
 	 */
-	RemoteObjectTemplate.deleteSession = function deleteSession(sessionId) {
-		let session = this._getSession(sessionId);
-
-		for (var calls in session.remoteCalls) {
-			session.remoteCalls[calls].deferred.reject({ code: 'reset', text: 'Session resynchronized' });
-		}
-
-		if (this.sessions[sessionId]) {
-			delete this.sessions[sessionId];
-		}
-	};
+	RemoteObjectTemplate.deleteSession = SessionHelpers.deleteSession.bind(null, this);
 
 	/**
 	 * After resynchronizing sessions we need to set a new sequence number to be used in
@@ -176,26 +136,7 @@
 	 *
 	 * @returns {Object} unknown
 	 */
-	RemoteObjectTemplate.saveSession = function saveSession(sessionId) {
-		const session = this._getSession(sessionId);
-
-		session.nextSaveSessionId = session.nextSaveSessionId + 1;
-		session.savedSessionId = session.nextSaveSessionId;
-		const objects = session.objects;
-		session.objects = {};
-
-		const str = {
-			callCount: this.getPendingCallCount(sessionId), // Can't just restore on another server and carry on
-			revision: session.savedSessionId, // Used to see if our memory copy good enough
-			referenced: new Date().getTime(), // Used for reaping old sessions
-			data: JSON.stringify(session) // All the session data
-		};
-
-		session.objects = objects;
-		this.logger.debug({ component: 'semotus', module: 'saveSession', activity: 'save' });
-
-		return str;
-	};
+	RemoteObjectTemplate.saveSession = SessionHelpers.saveSession.bind(null, this);
 
 	/**
 	 * A public function to determine whether there are remote calls in progress
@@ -221,24 +162,7 @@
 	 *
 	 * @returns {Boolean} false means that messages were in flight and a reset is needed
 	 */
-	RemoteObjectTemplate.restoreSession = function restoreSession(sessionId, savedSession, sendMessage) {
-		this.setSession(sessionId);
-		const session = this.sessions[sessionId];
-		this.logger.debug({ component: 'semotus', module: 'restoreSession', activity: 'save' });
-
-		if (session) {
-			if (session.savedSessionId == savedSession.revision) {
-				return true;
-			} else {
-				delete this.sessions[sessionId];
-			}
-		}
-
-		this.sessions[sessionId] = JSON.parse(savedSession.data);
-		this.sessions[sessionId].sendMessage = sendMessage;
-
-		return savedSession.callCount > 0;
-	};
+	RemoteObjectTemplate.restoreSession = SessionHelpers.restoreSession.bind(null, this);
 
 	/**
 	 * Indicate that all changes have been accepted outside of the message
@@ -246,11 +170,8 @@
 	 *
 	 * @param {unknown} sessionId unknown
 	 */
-	RemoteObjectTemplate.syncSession = function syncSession(sessionId) {
-		this._getSession(sessionId);
-		this.getChanges();
-		this._deleteChanges();
-	};
+
+	RemoteObjectTemplate.syncSession = SessionHelpers.syncSession.bind(null, this);
 
 	/**
 	 * Set the current session to a session id returned from createSession()
@@ -288,20 +209,7 @@
 	 *
 	 * @returns {*} unknown
 	 */
-	RemoteObjectTemplate.subscribe = function subscribe(role) {
-		const subscriptionId = this._getSession().nextSubscriptionId++;
-
-		this._getSession().subscriptions[subscriptionId] = {
-			role: role,
-			log: {
-				array: {},
-				change: {},
-				arrayDirty: {}
-			}
-		};
-
-		return subscriptionId;
-	};
+	RemoteObjectTemplate.subscribe = SubscriptionHelpers.subscribe.bind(null, this);
 
 	/**
 	 * Process a remote call message that was created and passed to the sendMessage callback
@@ -361,7 +269,7 @@
 					} else {
 						//TODO: Why is this not an else if clause?
 						if (this.memSession.semotus.callStartTime + this.maxCallTime > new Date().getTime()) {
-							Q.delay(5000).then(
+							delay(5000).then(
 								function a() {
 									this.logger.warn(
 										{
@@ -471,15 +379,15 @@
 		 *
 		 * @returns {unknown} unknown
 		 */
-		function processCall(forceupdate) {
-			return Q(forceupdate)
+		function processCall(forceupdate: boolean) {
+			return Promise.resolve(forceupdate)
 				.then(preCallHook.bind(this))
 				.then(applyChangesAndValidateCall.bind(this))
 				.then(customValidation.bind(this))
 				.then(callIfValid.bind(this))
 				.then(postCallHook.bind(this))
 				.then(postCallSuccess.bind(this))
-				.fail(postCallFailure.bind(this));
+				.catch(postCallFailure.bind(this));
 		}
 
 		/**
@@ -658,7 +566,7 @@
 		 */
 		function postCallHook(returnValue) {
 			if (this.controller && this.controller['postServerCall']) {
-				return Q(
+				return Promise.resolve(
 					this.controller['postServerCall'].call(
 						this.controller,
 						remoteCall.changes.length > 2,
@@ -718,8 +626,10 @@
 				data: {
 					call: remoteCall.name,
 					callTime: logTime(),
-					sequence: remoteCall.sequence
-				}
+					sequence: remoteCall.sequence,
+					message: undefined
+				},
+				activity: undefined
 			};
 
 			logBody.activity = activity;
@@ -749,7 +659,8 @@
 					module: 'processCall.failure',
 					activity: 'postCall.resolveErrorHandler',
 					data: {
-						call: remoteCall.name
+						call: remoteCall.name,
+						message: undefined
 					}
 				};
 
@@ -850,6 +761,7 @@
 			const errorHandlerPromise = resolveErrorHandler(
 				this.logger,
 				this.controller,
+				// @ts-ignore
 				packageChangesPayload.type,
 				remoteCall,
 				remoteCallId,
@@ -859,7 +771,7 @@
 
 			if (updateConflictRetry) {
 				return errorHandlerPromise
-					.then(Q.delay.bind(null, callContext.retries * 1000))
+					.then(delay.bind(null, callContext.retries * 1000))
 					.then(retryCall.bind(this));
 			} else {
 				return errorHandlerPromise.then(packageChanges.bind(this, packageChangesPayload));
@@ -1039,7 +951,8 @@
 }
  */
 	RemoteObjectTemplate.getChangeGroup = function getChangeGroup(type, subscriptionId) {
-		return this._getSubscription(subscriptionId).log[type];
+		const subscription: Subscription = this._getSubscription(subscriptionId);
+		return subscription.log[type];
 	};
 
 	/**
@@ -1065,7 +978,7 @@
 		}
 
 		this._convertArrayReferencesToChanges();
-		const changes = this.getChangeGroup('change', subscriptionId);
+		const changes: ChangeGroup = this.getChangeGroup('change', subscriptionId);
 
 		return changes;
 	};
@@ -1076,7 +989,7 @@
 	 * @returns {unknown} unknown
 	 */
 	RemoteObjectTemplate.getChangeStatus = function getChangeStatus() {
-		this._getSession();
+		this._getSession(); // necessary?
 
 		let a = 0;
 		let c = 0;
@@ -1120,6 +1033,7 @@
 		}
 
 		if (obj.__id__.match(/^client.*?-([0-9]*)$/)) {
+			// @ts-ignore
 			this.maxClientSequence = Math.max(this.maxClientSequence, RegExp.$1);
 			this.nextObjId = Math.max(this.maxClientSequence, this.nextObjId) + 1;
 		}
@@ -1156,7 +1070,7 @@
 			obj.amorphic = objectTemplate;
 			obj.amorphicate = RemoteObjectTemplate.sessionize.bind(objectTemplate);
 
-			// Here is where the object is stored in the sssion
+			// Here is where the object is stored in the session
 			this._stashObject(obj, obj.__template__, this);
 
 			// Process any array references by completing the reference processing that was stashed pre-sessionization
@@ -1233,7 +1147,7 @@
 				if (validate && this.controller) {
 					//TODO: make this one if statement
 					if (!validate.call(this.controller)) {
-						return Q.reject('validation failure');
+						return Promise.reject('validation failure');
 					}
 				}
 
@@ -1243,7 +1157,7 @@
 					activity: 'pre',
 					data: { call: propertyName }
 				});
-				const deferred = Q.defer();
+				const deferred = defer();
 				objectTemplate._queueRemoteCall(this.__id__, propertyName, deferred, arguments);
 
 				if (self.controller && self.controller.handleRemoteError) {
@@ -1257,11 +1171,11 @@
 						return deferred.promise.originalThen(res, rej, not);
 					};
 
-					Q.delay(0).then(function d() {
+					delay(0).then(function d() {
 						if (!handledRejection) {
 							return deferred.promise.then(null, function e(error) {
 								self.controller && self.controller.handleRemoteError(error);
-								return Q(true);
+								return Promise.resolve(true);
 							});
 						}
 					});
@@ -1274,6 +1188,9 @@
 	/**
 	 * Overridden method in ObjectTemplate that creates a structure initialize a property in constructor
 	 * and adds any getters and setters to the property so changes can be tracked
+	 *
+	 *
+	 * This triggers whenever properties are created
 	 *
 	 * @param {unknown} propertyName - the name of the property
 	 * @param {unknown} defineProperty - the property definition as passed to ObjectTemplate
@@ -1526,6 +1443,21 @@
 		this.__changeTracking__ = prevChangeTracking;
 	};
 
+	function shouldNotSendChanges(defineProperty, template, RemoteObjectTemplate) {
+		if (defineProperty.isLocal) { // If we've defined the property as local to where it's created / modified
+			return true;
+		} else if (defineProperty.toServer === false && RemoteObjectTemplate.role === 'client') {
+			return true; // If we're trying to send property to the server from client, when prop's toServer == false;
+		} else if (defineProperty.toClient === false && RemoteObjectTemplate.role === 'server') {
+			return true; // If we're trying to send property to the client from server, when prop's toClient == false;
+		} else if (template.__toServer__ === false && RemoteObjectTemplate.role == 'client') {
+			return true; // If we're trying to send property to the server from client, when the whole template has toServer == false;
+		} else if (template.__toClient__ === false && RemoteObjectTemplate.role === 'server') {
+			return true; // If we're trying to send property to the client from server, when the whole template has toClient == false;
+		}
+		return false;
+	}
+
 	/**
 	 * Determine whether changes need to be created for a property
 	 *
@@ -1539,13 +1471,7 @@
 	RemoteObjectTemplate._createChanges = function createChanges(defineProperty, template) {
 		template = template || {};
 
-		return !(
-			defineProperty.isLocal == true ||
-			(defineProperty.toServer == false && this.role == 'client') ||
-			(defineProperty.toClient == false && this.role == 'server') ||
-			(template.__toServer__ == false && this.role == 'client') ||
-			(template.__toClient__ == false && this.role == 'server')
-		);
+		return !(shouldNotSendChanges(defineProperty, template, this));
 	};
 
 	/**
@@ -1560,17 +1486,15 @@
 	 */
 	RemoteObjectTemplate._acceptChanges = function acceptChanges(defineProperty, template) {
 		template = template || {};
-		return !(
-			defineProperty.isLocal == true ||
-			(defineProperty.toServer == false && this.role == 'server') ||
-			(defineProperty.toClient == false && this.role == 'client') ||
-			(template.__toServer__ == false && this.role == 'server') ||
-			(template.__toClient__ == false && this.role == 'client')
-		);
+		return !(shouldNotSendChanges(defineProperty, template, this));
 	};
 
 	/**
 	 * Determine whether any tracking of old values is needed
+	 *
+	 *
+	 * For a specific property if isLocal is true, it means that the property will never be synced over the wire
+	 * If toServer === false AND toClient === false, it is another indicator that this property will never be synced over the wire
 	 * @param {unknown} defineProperty unknown
 	 *
 	 * @returns {Boolean} unknown
@@ -1578,10 +1502,9 @@
 	 * @private
 	 */
 	RemoteObjectTemplate._manageChanges = function manageChanges(defineProperty) {
-		return !(
-			defineProperty.isLocal == true ||
-			(defineProperty.toServer == false && defineProperty.toClient == false)
-		);
+		const isLocal = defineProperty.isLocal === true;
+		const isLocalAlt = defineProperty.toServer === false && defineProperty.toClient === false;
+		return !(isLocal || isLocalAlt);
 	};
 
 	/**************************** Change Management Functions **********************************/
@@ -1649,6 +1572,14 @@
 		}
 	};
 
+	function objectOnClientOnly(remoteObjectTemplate, obj) {
+		return remoteObjectTemplate.role == 'client' && obj.__template__.__toServer__ === false;
+	}
+
+	function objectOnServerOnly(remoteObjectTemplate, obj) {
+		return remoteObjectTemplate.role == 'server' && obj.__template__.__toClient__ === false;
+	}
+
 	/**
 	 * Called from a setter when a value has changed. Record old and new values
 	 * changes are accumulated for each change subscriber.
@@ -1666,11 +1597,7 @@
 	 * @private
 	 */
 	RemoteObjectTemplate._changedValue = function changedValue(obj, prop, value) {
-		if (
-			obj.__transient__ ||
-			(this.role == 'client' && obj.__template__.__toServer__ == false) ||
-			(this.role == 'server' && obj.__template__.__toClient__ == false)
-		) {
+		if (obj.__transient__ || objectOnClientOnly(this, obj) || objectOnServerOnly(this, obj)) {
 			return;
 		}
 
@@ -1720,13 +1647,8 @@
 	 *
 	 * @private
 	 */
-	RemoteObjectTemplate._referencedArrayWithChangeGroup = function(obj) {};
 	RemoteObjectTemplate._referencedArray = function referencedArray(obj, prop, arrayRef, sessionId) {
-		if (
-			obj.__transient__ ||
-			(this.role == 'client' && obj.__template__.__toServer__ == false) ||
-			(this.role == 'server' && obj.__template__.__toClient__ == false)
-		) {
+		if (obj.__transient__ || objectOnClientOnly(this, obj) || objectOnServerOnly(this, obj)) { // Should not be transported
 			return;
 		}
 
@@ -1808,6 +1730,7 @@
 		const session = this._getSession();
 		const subscriptions = this._getSubscriptions();
 
+		// Iterate
 		for (var subscription in subscriptions) {
 			if (subscriptions[subscription] != this.processingSubscription) {
 				const changeGroup = this.getChangeGroup('change', subscription);
@@ -2192,11 +2115,7 @@
 						activity: 'processing',
 						data: { template: obj.__template__.__name__, property: prop }
 					},
-					'Could not apply change to ' +
-						obj.__template__.__name__ +
-						'.' +
-						prop +
-						' property not defined in template'
+					`Could not apply change to ${obj.__template__.__name__}.${prop} property not defined in template`
 				);
 				return false;
 			}
@@ -2380,14 +2299,7 @@
 			const conflictErrorData = { component: 'semotus', module: 'applyPropertyChange', activity: 'processing' };
 
 			const conflictErrorString =
-				'Could not apply change to ' +
-				obj.__template__.__name__ +
-				'.' +
-				prop +
-				' expecting ' +
-				this.cleanPrivateValues(prop, oldValueConverted, defineProperty) +
-				' but presently ' +
-				this.cleanPrivateValues(prop, currentValueConverted, defineProperty);
+				`Could not apply change to ${obj.__template__.__name__}.${prop} expecting ${this.cleanPrivateValues(prop, oldValueConverted, defineProperty)} but presently ${this.cleanPrivateValues(prop, currentValueConverted, defineProperty)}`;
 
 			if (this.__conflictMode__ == 'hard') {
 				this.logger.error(conflictErrorData, conflictErrorString);
@@ -2398,15 +2310,11 @@
 		}
 
 		// Based on type of property we convert the value from it's string representation into
-		// either a fundemental type or a templated object, creating it if needed
+		// either a fundamental type or a templated object, creating it if needed
 		if (!this._acceptChanges(defineProperty, obj.__template__)) {
 			this.logger.error(
 				{ component: 'semotus', module: 'applyPropertyChange', activity: 'processing' },
-				'Could not accept changes to ' +
-					obj.__template__.__name__ +
-					'.' +
-					prop +
-					' based on property definition'
+				`Could not accept changes to ${obj.__template__.__name__}.${prop} based on property definition`
 			);
 
 			return false;
@@ -2462,14 +2370,7 @@
 				} else {
 					this.logger.error(
 						{ component: 'semotus', module: 'applyPropertyChange', activity: 'processing' },
-						'Could not apply change to ' +
-							obj.__template__.__name__ +
-							'.' +
-							prop +
-							' id (' +
-							objId +
-							') is type ' +
-							session.objects[objId].__template__.__name__
+						`Could not apply change to ${obj.__template__.__name__}.${prop} - ID (${objId}) is TYPE ${session.objects[objId].__template__.__name__}`
 					);
 
 					return false;
@@ -2518,13 +2419,13 @@
 		}
 
 		if (ix >= 0) {
-			this.changeString[obj.__template__.__name__ + '[' + ix + ']' + '.' + prop] = this.cleanPrivateValues(
+			this.changeString[`${obj.__template__.__name__}[${ix}].${prop}`] = this.cleanPrivateValues(
 				prop,
 				logValue,
 				defineProperty
 			);
 		} else {
-			this.changeString[obj.__template__.__name__ + '.' + prop] = this.cleanPrivateValues(
+			this.changeString[`${obj.__template__.__name__}.${prop}`] = this.cleanPrivateValues(
 				prop,
 				logValue,
 				defineProperty
@@ -2619,10 +2520,7 @@
 				newValue = sessionReference;
 			} else {
 				throw new Error(
-					'_createEmptyObject called for ' +
-						template.__name__ +
-						' and session object with that id exists but for template ' +
-						session.objects[objId].__template__.__name__
+					`_createEmptyObject called for ${template.__name__} and session object with that id exists but for template ${session.objects[objId].__template__.__name__}`
 				);
 			}
 		} else {
@@ -2743,7 +2641,7 @@
 	 * @private
 	 */
 	RemoteObjectTemplate._toTransport = function clone(obj) {
-		let res = { type: null };
+		let res: any = {type: null};
 
 		// Replace references with an object that describes the type
 		// and has a property for the original value
@@ -2879,12 +2777,7 @@
 	 *
 	 * @private
 	 */
-	RemoteObjectTemplate._getSession = function getSession(_sid) {
-		if (!this.currentSession) {
-			return null;
-		}
-		return this.sessions[this.currentSession];
-	};
+	RemoteObjectTemplate._getSession = SessionHelpers.getSession.bind(null, this);
 
 	/**
 	 * Purpose unknown
@@ -2908,10 +2801,7 @@
 	 *
 	 * @private
 	 */
-	RemoteObjectTemplate._getSubscriptions = function getSubscriptions(sessionId) {
-		const subscriptions = this._getSession(sessionId);
-		return subscriptions ? subscriptions.subscriptions : null;
-	};
+	RemoteObjectTemplate._getSubscriptions = SubscriptionHelpers.getSubscriptions.bind(null, this);
 
 	/**
 	 * Purpose unknown
@@ -2933,9 +2823,7 @@
 	 *
 	 * @private
 	 */
-	RemoteObjectTemplate._getSubscription = function getSubscription(subscriptionId) {
-		return this._getSession().subscriptions[subscriptionId || 0];
-	};
+	RemoteObjectTemplate._getSubscription = SubscriptionHelpers.getSubscription.bind(null, this);
 
 	/**
 	 * Purpose unknown
@@ -2957,185 +2845,17 @@
 	RemoteObjectTemplate.bindDecorators = function(objectTemplate) {
 		objectTemplate = objectTemplate || this;
 
-		this.supertypeClass = function(target) {
-			let ret;
-
-			// Decorator workerbee
-			const decorator = function decorator(target) {
-				// second time we must call the function returned the first time because it has the
-				// properties as a closure
-				ret = ret ? ret(target, objectTemplate) : SupertypeModule.supertypeClass(target, objectTemplate);
-
-				// Mainly for peristor properties to make sure they get transported
-				target.createProperty = function(propertyName, defineProperty) {
-					if (defineProperty.body) {
-						target.prototype[propertyName] = objectTemplate._setupFunction(
-							propertyName,
-							defineProperty.body,
-							defineProperty.on,
-							defineProperty.validate
-						);
-					} else {
-						target.prototype.__amorphicprops__[propertyName] = defineProperty;
-						const value = defineProperty.value;
-						// The getter actually initializes the property
-						defineProperty.get = function() {
-							if (!this['__' + propertyName]) {
-								this['__' + propertyName] = ObjectTemplate.clone(
-									value,
-									defineProperty.of || defineProperty.type || null
-								);
-							}
-							return this['__' + propertyName];
-						};
-						const defineProperties = {};
-						objectTemplate._setupProperty(propertyName, defineProperty, undefined, defineProperties);
-						Object.defineProperties(target.prototype, defineProperties);
-					}
-				};
-				return ret;
-			};
-
-			// Called by decorator processor
-			if (target.prototype) {
-				return decorator(target);
-			}
-
-			// Called first time with parameter rather than target - call supertypes supertypeClass function which will
-			// return a function that must be called on the 2nd pass when we have a target.  It will remember parameter
-			ret = SupertypeModule.supertypeClass(target, objectTemplate);
-			return decorator; // decorator will be called 2nd time with ret as a closure
-		};
-
-		this.Supertype = function() {
-			return SupertypeModule.Supertype.call(this, objectTemplate);
-		};
-
+		this.supertypeClass = supertypeClass.bind(this, objectTemplate, SupertypeModule);
+		this.Supertype = Supertype.bind(this, objectTemplate, SupertypeModule);
 		this.Supertype.prototype = SupertypeModule.Supertype.prototype;
+		this.property = property.bind(this, objectTemplate, SupertypeModule);
+		this.remote = remote.bind(this, objectTemplate);
 
-		this.property = function(props) {
-			props = props || {};
-			props.toClient = applyRuleSet(props.toClient, this.toClientRuleSet);
-			props.toServer = applyRuleSet(props.toServer, this.toServerRuleSet);
-			const baseDecorator = SupertypeModule.property(props, objectTemplate);
-			return function(target, targetKey) {
-				baseDecorator(target, targetKey);
-				const defineProperties = {};
-				props.enumerable = true;
-				props.writable = true;
-				objectTemplate._setupProperty(targetKey, props, undefined, defineProperties);
-				Object.defineProperties(target, defineProperties);
-			};
-		};
-
-		this.remote = function(defineProperty) {
-			defineProperty = defineProperty || {};
-
-			/*
-                if we haven't supplied a configuration object into the decorator,
-                 default the role of this function to a server API function
-             */
-			if (!defineProperty.on) {
-				defineProperty.on = 'server';
-			}
-
-			// function that we call to validate any changes for remote calls
-			let remoteValidator = defineProperty.serverValidation;
-
-			return function(target, propertyName, descriptor) {
-				descriptor.value = objectTemplate._setupFunction(
-					propertyName,
-					descriptor.value,
-					defineProperty.on,
-					defineProperty.validate,
-					remoteValidator,
-					defineProperty.target
-				);
-
-				/*
-                    this function been marked as a server API either explicitly or by default.
-                    set the appropriate metadata.
-                 */
-				if (defineProperty.on === 'server') {
-					descriptor.value.__on__ = 'server';
-				}
-
-				if (defineProperty.type) {
-					descriptor.value.__returns__ = defineProperty.type;
-				}
-				if (defineProperty.of) {
-					descriptor.value.__returns__ = defineProperty.of;
-					descriptor.value.__returnsarray__ = true;
-				}
-			};
-		};
 	};
 
-	function applyRuleSet(prop, ruleSet) {
-		if (prop instanceof Array && ruleSet instanceof Array && ruleSet.length > 0) {
-			return prop.some(function(r) {
-				return ruleSet.indexOf(r) >= 0;
-			});
-		} else {
-			return prop;
-		}
-	}
-
-	// These two mixins and extender functions are needed because in the browser we only include supertype and semotus
-	// and since classes use these in their extends hierarchy they must be defined.
-
-	const __extends =
-		(this && this.__extends) ||
-		(function() {
-			const extendStatics =
-				Object.setPrototypeOf ||
-				({ __proto__: [] } instanceof Array &&
-					function(d, b) {
-						d.__proto__ = b;
-					}) ||
-				function(d, b) {
-					for (var p in b) {
-						if (b.hasOwnProperty(p)) {
-							d[p] = b[p];
-						}
-					}
-				};
-			return function(d, b) {
-				extendStatics(d, b);
-				function __() {
-					this.constructor = d;
-				}
-				d.prototype = b === null ? Object.create(b) : ((__.prototype = b.prototype), new __());
-			};
-		})();
-
-	RemoteObjectTemplate.Persistable = function(Base) {
-		return (function(_super) {
-			__extends(class_1, _super);
-			function class_1() {
-				return (_super !== null && _super.apply(this, arguments)) || this;
-			}
-			return class_1;
-		})(Base);
-	};
-	RemoteObjectTemplate.Remoteable = function(Base) {
-		return (function(_super) {
-			__extends(class_1, _super);
-			function class_1() {
-				return (_super !== null && _super.apply(this, arguments)) || this;
-			}
-			return class_1;
-		})(Base);
-	};
-	RemoteObjectTemplate.Bindable = function(Base) {
-		return (function(_super) {
-			__extends(class_1, _super);
-			function class_1() {
-				return (_super !== null && _super.apply(this, arguments)) || this;
-			}
-			return class_1;
-		})(Base);
-	};
+	RemoteObjectTemplate.Persistable = Persistable;
+	RemoteObjectTemplate.Remoteable = Remoteable;
+	RemoteObjectTemplate.Bindable = Bindable;
 
 	RemoteObjectTemplate.bindDecorators(); //Default to binding to yourself
 
