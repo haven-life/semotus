@@ -1,5 +1,5 @@
-import * as SessionHelpers from './SessionHelpers';
-import {Semotus, Subscription, Subscriptions} from './HelperTypes';
+import * as Sessions from './Sessions';
+import {Semotus, Subscription, Subscriptions} from './Types';
 
 /**
  * Purpose unknown
@@ -13,7 +13,7 @@ import {Semotus, Subscription, Subscriptions} from './HelperTypes';
  */
 
 export function getSubscription(semotus: Semotus, subscriptionId): Subscription {
-    return SessionHelpers.getSession(semotus).subscriptions[subscriptionId || 0];
+    return Sessions.get(semotus).subscriptions[subscriptionId || 0];
 }
 
 /**
@@ -27,7 +27,7 @@ export function getSubscription(semotus: Semotus, subscriptionId): Subscription 
  * @private
  */
 export function getSubscriptions(semotus: Semotus, sessionId): null | Subscriptions {
-    const session = SessionHelpers.getSession(semotus, sessionId);
+    const session = Sessions.get(semotus, sessionId);
 
     if (session) {
         return session.subscriptions;
@@ -47,7 +47,7 @@ export function getSubscriptions(semotus: Semotus, sessionId): null | Subscripti
  * @returns {*} unknown
  */
 export function subscribe(semotus: Semotus, role) {
-    const session = SessionHelpers.getSession(semotus);
+    const session = Sessions.get(semotus);
     const subscriptionId = session.nextSubscriptionId++;
 
     session.subscriptions[subscriptionId] = {

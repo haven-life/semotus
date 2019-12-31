@@ -23,12 +23,13 @@
  objects created with it's templates.  The synchronization
  */
 
-import {ChangeGroup, Semotus, Subscription} from './HelperTypes';
+import {ChangeGroup, Semotus, Subscription} from './helpers/Types';
 import {property, remote, Supertype, supertypeClass} from './decorators';
 import {Bindable, Persistable, Remoteable} from './setupExtends';
-import * as SessionHelpers from './SessionHelpers';
-import * as SubscriptionHelpers from './SubscriptionHelpers';
-import {defer, delay} from './UtilityFunctions';
+import * as Sessions from './helpers/Sessions';
+import * as Subscriptions from './helpers/Subscriptions';
+import {defer, delay} from './helpers/Utilities';
+import * as Changes from './helpers/Changes';
 
 declare var define;
 
@@ -110,14 +111,14 @@ declare var define;
 	 *
 	 * @returns {*} unknown
 	 */
-	RemoteObjectTemplate.createSession = SessionHelpers.createSession.bind(null, this);
+    RemoteObjectTemplate.createSession = Sessions.create.bind(null, this);
 
 	/**
 	 * Remove the session from the sessions map, rejecting any outstanding promises
 	 *
 	 * @param {unknown} sessionId unknown
 	 */
-	RemoteObjectTemplate.deleteSession = SessionHelpers.deleteSession.bind(null, this);
+    RemoteObjectTemplate.deleteSession = Sessions.remove.bind(null, this);
 
 	/**
 	 * After resynchronizing sessions we need to set a new sequence number to be used in
@@ -126,7 +127,7 @@ declare var define;
 	 * @param {unknown} nextObjId unknown
 	 */
 	RemoteObjectTemplate.setMinimumSequence = function setMinimumSequence(nextObjId) {
-        const session = SessionHelpers.getSession(this);
+        const session = Sessions.get(this);
         session.nextObjId = Math.max(nextObjId, session.nextObjId);
 	};
 
@@ -137,7 +138,7 @@ declare var define;
 	 *
 	 * @returns {Object} unknown
 	 */
-	RemoteObjectTemplate.saveSession = SessionHelpers.saveSession.bind(null, this);
+    RemoteObjectTemplate.saveSession = Sessions.save.bind(null, this);
 
 	/**
 	 * A public function to determine whether there are remote calls in progress
@@ -147,7 +148,7 @@ declare var define;
 	 * @returns {Number} The number of remote calls pending in the session.
 	 */
 	RemoteObjectTemplate.getPendingCallCount = function getPendingCallCount(sessionId) {
-        const session = SessionHelpers.getSession(this, sessionId);
+        const session = Sessions.get(this, sessionId);
 
 		return Object.keys(session.pendingRemoteCalls).length;
 	};
@@ -163,7 +164,7 @@ declare var define;
 	 *
 	 * @returns {Boolean} false means that messages were in flight and a reset is needed
 	 */
-	RemoteObjectTemplate.restoreSession = SessionHelpers.restoreSession.bind(null, this);
+    RemoteObjectTemplate.restoreSession = Sessions.restore.bind(null, this);
 
 	/**
 	 * Indicate that all changes have been accepted outside of the message
@@ -172,7 +173,7 @@ declare var define;
 	 * @param {unknown} sessionId unknown
 	 */
 
-	RemoteObjectTemplate.syncSession = SessionHelpers.syncSession.bind(null, this);
+    RemoteObjectTemplate.syncSession = Sessions.sync.bind(null, this);
 
 	/**
 	 * Set the current session to a session id returned from createSession()
@@ -192,7 +193,7 @@ declare var define;
 	 * @param {unknown} sessionId optional session id
 	 */
 	RemoteObjectTemplate.enableSendMessage = function enableSendMessage(value, messageCallback, sessionId) {
-        const session = SessionHelpers.getSession(this, sessionId);
+        const session = Sessions.get(this, sessionId);
 		session.sendMessageEnabled = value;
 
 		if (messageCallback) {
@@ -210,7 +211,7 @@ declare var define;
 	 *
 	 * @returns {*} unknown
 	 */
-	RemoteObjectTemplate.subscribe = SubscriptionHelpers.subscribe.bind(null, this);
+    RemoteObjectTemplate.subscribe = Subscriptions.subscribe.bind(null, this);
 
 	/**
 	 * Process a remote call message that was created and passed to the sendMessage callback
@@ -228,7 +229,7 @@ declare var define;
 
 		let callContext;
 		let hadChanges = 0;
-        const session = SessionHelpers.getSession(this);
+        const session = Sessions.get(this);
 		const remoteCallId = remoteCall.remoteCallId;
 
 		switch (remoteCall.type) {
@@ -827,7 +828,7 @@ declare var define;
 	 * @returns {*} unknown
 	 */
 	RemoteObjectTemplate.serializeAndGarbageCollect = function serializeAndGarbageCollect() {
-        const session = SessionHelpers.getSession(this);
+        const session = Sessions.get(this);
 		const idMap = {};
 		let objectKey = '';
 		let propKey = '';
@@ -898,7 +899,7 @@ declare var define;
 	 * @returns {*} the message or null
 	 */
 	RemoteObjectTemplate.getMessage = function getMessage(sessionId, forceMessage) {
-        const session = SessionHelpers.getSession(this, sessionId);
+        const session = Sessions.get(this, sessionId);
 		let message = session.remoteCalls.shift();
 
 		if (message) {
@@ -926,7 +927,7 @@ declare var define;
 	 * @param {unknown} sessionId unknown
 	 */
 	RemoteObjectTemplate.clearPendingCalls = function clearPendingCalls(sessionId) {
-        const session = SessionHelpers.getSession(this, sessionId);
+        const session = Sessions.get(this, sessionId);
 		session.remoteCalls = [];
 	};
 
@@ -939,7 +940,7 @@ declare var define;
  * @returns {[]} the messages in an array
  *
  RemoteObjectTemplate.getMessages = function(sessionId) {
-    const session = SessionHelpers.getSession(this, sessionId);
+    const session = Sessions.get(this, sessionId);
     const messages = [];
     const message;
     while (message = session.remoteCalls.shift())
@@ -990,7 +991,7 @@ declare var define;
 	 * @returns {unknown} unknown
 	 */
 	RemoteObjectTemplate.getChangeStatus = function getChangeStatus() {
-        SessionHelpers.getSession(this); // necessary?
+        Sessions.get(this); // necessary?
 
 		let a = 0;
 		let c = 0;
@@ -1028,7 +1029,7 @@ declare var define;
 		}
 		this.nextDispenseId = null;
 
-        const session = SessionHelpers.getSession(this, undefined); // May not have one if called from new
+        const session = Sessions.get(this, undefined); // May not have one if called from new
 		if (!this.__transient__ && session) {
 			session.objects[obj.__id__] = obj;
 		}
@@ -1267,8 +1268,8 @@ declare var define;
 		// Setter
 		const objectTemplate = this;
 
-		if (this._useGettersSetters && this._manageChanges(defineProperty)) {
-			const createChanges = this._createChanges(defineProperty);
+        if (this._useGettersSetters && Changes.manage(defineProperty)) {
+            const createChanges = Changes.create(defineProperty, undefined, this);
 
 			defineProperty.set = (function set() {
 				// use a closure to record the property name which is not passed to the setter
@@ -1426,7 +1427,7 @@ declare var define;
 		}
 
 		// Setters and Getters cannot have value or be writable
-		if (this._useGettersSetters && this._manageChanges(defineProperty)) {
+        if (this._useGettersSetters && Changes.manage(defineProperty)) {
 			delete defineProperty.value;
 			delete defineProperty.writable;
 		}
@@ -1444,74 +1445,10 @@ declare var define;
 		this.__changeTracking__ = prevChangeTracking;
 	};
 
-	function shouldNotSendChanges(defineProperty, template, RemoteObjectTemplate) {
-		if (defineProperty.isLocal) { // If we've defined the property as local to where it's created / modified
-			return true;
-		} else if (defineProperty.toServer === false && RemoteObjectTemplate.role === 'client') {
-			return true; // If we're trying to send property to the server from client, when prop's toServer == false;
-		} else if (defineProperty.toClient === false && RemoteObjectTemplate.role === 'server') {
-			return true; // If we're trying to send property to the client from server, when prop's toClient == false;
-		} else if (template.__toServer__ === false && RemoteObjectTemplate.role == 'client') {
-			return true; // If we're trying to send property to the server from client, when the whole template has toServer == false;
-		} else if (template.__toClient__ === false && RemoteObjectTemplate.role === 'server') {
-			return true; // If we're trying to send property to the client from server, when the whole template has toClient == false;
-		}
-		return false;
-	}
-
-	/**
-	 * Determine whether changes need to be created for a property
-	 *
-	 * @param {unknown} defineProperty unknown
-	 * @param {unknown} template unknown
-	 *
-	 * @returns {Boolean} unknown
-	 *
-	 * @private
-	 */
-	RemoteObjectTemplate._createChanges = function createChanges(defineProperty, template) {
-		template = template || {};
-
-		return !(shouldNotSendChanges(defineProperty, template, this));
-	};
-
-	/**
-	 * Determine whether changes should be accepted for a property
-	 *
-	 * @param {unknown} defineProperty unknown
-	 * @param {unknown} template unknown
-	 *
-	 * @returns {Boolean} unknown
-	 *
-	 * @private
-	 */
-	RemoteObjectTemplate._acceptChanges = function acceptChanges(defineProperty, template) {
-		template = template || {};
-		return !(shouldNotSendChanges(defineProperty, template, this));
-	};
-
-	/**
-	 * Determine whether any tracking of old values is needed
-	 *
-	 *
-	 * For a specific property if isLocal is true, it means that the property will never be synced over the wire
-	 * If toServer === false AND toClient === false, it is another indicator that this property will never be synced over the wire
-	 * @param {unknown} defineProperty unknown
-	 *
-	 * @returns {Boolean} unknown
-	 *
-	 * @private
-	 */
-	RemoteObjectTemplate._manageChanges = function manageChanges(defineProperty) {
-		const isLocal = defineProperty.isLocal === true;
-		const isLocalAlt = defineProperty.toServer === false && defineProperty.toClient === false;
-		return !(isLocal || isLocalAlt);
-	};
-
 	/**************************** Change Management Functions **********************************/
 
 	RemoteObjectTemplate._generateChanges = function generateChanges() {
-        const session = SessionHelpers.getSession(this);
+        const session = Sessions.get(this);
 
 		for (var obj in session.objects) {
 			this._logChanges(session.objects[obj]);
@@ -1537,8 +1474,8 @@ declare var define;
 			const defineProperty = props[prop];
 			const type = defineProperty.type;
 
-			if (type && this._manageChanges(defineProperty)) {
-				const createChanges = this._createChanges(defineProperty, obj.__template__);
+            if (type && Changes.manage(defineProperty)) {
+                const createChanges = Changes.create(defineProperty, obj.__template__, this);
 
 				if (type == Array) {
 					if (createChanges) {
@@ -1728,7 +1665,7 @@ declare var define;
 	 * @private
 	 */
 	RemoteObjectTemplate._convertArrayReferencesToChanges = function convertArrayReferencesToChanges() {
-        const session = SessionHelpers.getSession(this);
+        const session = Sessions.get(this);
 		const subscriptions = this._getSubscriptions();
 
 		// Iterate
@@ -1833,7 +1770,7 @@ declare var define;
 	 * If an actual change set __changed__
 	 */
 	RemoteObjectTemplate.MarkChangedArrayReferences = function MarkChangedArrayReferences() {
-        const session = SessionHelpers.getSession(this);
+        const session = Sessions.get(this);
 		const subscriptions = this._getSubscriptions();
 
 		for (var subscription in subscriptions) {
@@ -1949,7 +1886,7 @@ declare var define;
 	 * @returns {unknown}
 	 */
 	RemoteObjectTemplate.getObject = function getObject(objId, template) {
-        const session = SessionHelpers.getSession(this);
+        const session = Sessions.get(this);
 		const obj = session.objects[objId];
 
 		if (obj && obj.__template__ && obj.__template__ == template) {
@@ -1972,7 +1909,7 @@ declare var define;
 	 * @private
 	 */
 	RemoteObjectTemplate._applyChanges = function applyChanges(changes, force, subscriptionId, callContext) {
-        const session = SessionHelpers.getSession(this);
+        const session = Sessions.get(this);
 		const rollback = [];
 
 		this.processingSubscription = this._getSubscription(subscriptionId);
@@ -2262,7 +2199,7 @@ declare var define;
 		newValue,
 		force
 	) {
-        const session = SessionHelpers.getSession(this);
+        const session = Sessions.get(this);
 		let currentValue;
 
 		// Get old, new and current value to determine if change is still applicable
@@ -2312,7 +2249,7 @@ declare var define;
 
 		// Based on type of property we convert the value from it's string representation into
 		// either a fundamental type or a templated object, creating it if needed
-		if (!this._acceptChanges(defineProperty, obj.__template__)) {
+        if (!Changes.accept(defineProperty, obj.__template__, this)) {
 			this.logger.error(
 				{ component: 'semotus', module: 'applyPropertyChange', activity: 'processing' },
 				`Could not accept changes to ${obj.__template__.__name__}.${prop} based on property definition`
@@ -2388,7 +2325,7 @@ declare var define;
 			if (ix >= 0) {
 				obj[prop][ix] = newValue;
 
-				if (!this._useGettersSetters && this._manageChanges(defineProperty)) {
+                if (!this._useGettersSetters && Changes.manage(defineProperty)) {
 					if (!obj['__' + prop]) {
 						obj['__' + prop] = [];
 					}
@@ -2401,7 +2338,7 @@ declare var define;
 			} else {
 				obj[prop] = newValue;
 
-				if (!this._useGettersSetters && this._manageChanges(defineProperty)) {
+                if (!this._useGettersSetters && Changes.manage(defineProperty)) {
 					obj['__' + prop] = newValue;
 				}
 			}
@@ -2461,7 +2398,7 @@ declare var define;
 	 * @private
 	 */
 	RemoteObjectTemplate._rollbackChanges = function rollbackChanges() {
-        const session = SessionHelpers.getSession(this);
+        const session = Sessions.get(this);
 		const changes = this.getChanges();
 
 		for (var objId in changes) {
@@ -2512,7 +2449,7 @@ declare var define;
 
 		template = this._resolveSubClass(template, objId, defineProperty);
 
-        const session = SessionHelpers.getSession(this);
+        const session = Sessions.get(this);
 		const sessionReference = session ? session.objects[objId] : null;
 		let newValue;
 
@@ -2571,7 +2508,7 @@ declare var define;
 	RemoteObjectTemplate.inject = function inject(template, injector) {
 		template.__injections__.push(injector);
 		// Go through existing objects to inject them as well
-        const session = SessionHelpers.getSession(this);
+        const session = Sessions.get(this);
 
 		for (var obj in session.objects) {
 			if (this._getBaseClass(session.objects[obj].__template__) == this._getBaseClass(template)) {
@@ -2594,7 +2531,7 @@ declare var define;
 	 */
 
 	RemoteObjectTemplate._queueRemoteCall = function queueRemoteCall(objId, functionName, deferred, args) {
-        const session = SessionHelpers.getSession(this);
+        const session = Sessions.get(this);
 		args = Array.prototype.slice.call(args); // JS arguments array not an array after all
 
 		session.remoteCalls.push({
@@ -2619,7 +2556,7 @@ declare var define;
 	 * @private
 	 */
 	RemoteObjectTemplate._processQueue = function processQueue() {
-        const session = SessionHelpers.getSession(this);
+        const session = Sessions.get(this);
 
 		if (session.sendMessage && session.sendMessageEnabled) {
 			const message = this.getMessage();
@@ -2690,7 +2627,7 @@ declare var define;
 	 * @private
 	 */
 	RemoteObjectTemplate._fromTransport = function clone(obj) {
-        const session = SessionHelpers.getSession(this);
+        const session = Sessions.get(this);
 
 		switch (obj.type) {
 			case 'date':
@@ -2778,7 +2715,7 @@ declare var define;
 	 *
 	 * @private
 	 */
-	RemoteObjectTemplate._getSession = SessionHelpers.getSession.bind(null, this);
+    RemoteObjectTemplate._getSession = Sessions.get.bind(null, this);
 
 	/**
 	 * Purpose unknown
@@ -2802,7 +2739,7 @@ declare var define;
 	 *
 	 * @private
 	 */
-	RemoteObjectTemplate._getSubscriptions = SubscriptionHelpers.getSubscriptions.bind(null, this);
+    RemoteObjectTemplate._getSubscriptions = Subscriptions.getSubscriptions.bind(null, this);
 
 	/**
 	 * Purpose unknown
@@ -2824,7 +2761,7 @@ declare var define;
 	 *
 	 * @private
 	 */
-	RemoteObjectTemplate._getSubscription = SubscriptionHelpers.getSubscription.bind(null, this);
+    RemoteObjectTemplate._getSubscription = Subscriptions.getSubscription.bind(null, this);
 
 	/**
 	 * Purpose unknown

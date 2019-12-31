@@ -1,4 +1,4 @@
-import {SavedSession, Semotus, SendMessage, Session} from './HelperTypes';
+import {SavedSession, Semotus, SendMessage, Session} from './Types';
 
 /**
  * Obtain a session for tracking subscriptions
@@ -10,7 +10,7 @@ import {SavedSession, Semotus, SendMessage, Session} from './HelperTypes';
  *
  * @returns {*} unknown
  */
-export function createSession(semotus: Semotus, role, sendMessage: SendMessage, sessionId): any {
+export function create(semotus: Semotus, role, sendMessage: SendMessage, sessionId): any {
     if (!semotus.sessions) {
         semotus.nextSubscriptionId = 0;
         semotus.nextSessionId = 1;
@@ -59,8 +59,8 @@ export function createSession(semotus: Semotus, role, sendMessage: SendMessage, 
  * @param semotus
  * @param {unknown} sessionId unknown
  */
-export function deleteSession(semotus: Semotus, sessionId: string | number) {
-    let session = getSession(semotus, sessionId);
+export function remove(semotus: Semotus, sessionId: string | number) {
+    let session = get(semotus, sessionId);
 
     for (var calls in session.remoteCalls) {
         session.remoteCalls[calls].deferred.reject({code: 'reset', text: 'Session resynchronized'});
@@ -78,7 +78,7 @@ export function deleteSession(semotus: Semotus, sessionId: string | number) {
  *
  * @private
  */
-export function getSession(semotus: Semotus, _sid?): Session | null {
+export function get(semotus: Semotus, _sid?): Session | null {
     if (!semotus.currentSession) {
         return null;
     }
@@ -94,8 +94,8 @@ export function getSession(semotus: Semotus, _sid?): Session | null {
  * @param {unknown} sessionId unknown
  */
 
-export function syncSession(semotus: Semotus, sessionId) {
-    getSession(semotus, sessionId);
+export function sync(semotus: Semotus, sessionId) {
+    get(semotus, sessionId);
     semotus.getChanges();
     semotus._deleteChanges();
 }
@@ -113,10 +113,10 @@ export function syncSession(semotus: Semotus, sessionId) {
  *
  * @returns {Boolean} false means that messages were in flight and a reset is needed
  */
-export function restoreSession(semotus: Semotus, sessionId, savedSession: SavedSession, sendMessage: SendMessage) {
+export function restore(semotus: Semotus, sessionId, savedSession: SavedSession, sendMessage: SendMessage) {
     semotus.setSession(sessionId);
     const session = semotus.sessions[sessionId];
-    semotus.logger.debug({component: 'semotus', module: 'restoreSession', activity: 'save'});
+    semotus.logger.debug({component: 'semotus', module: 'restore', activity: 'save'});
 
     if (session) {
         if (session.savedSessionId == savedSession.revision) {
@@ -140,8 +140,8 @@ export function restoreSession(semotus: Semotus, sessionId, savedSession: SavedS
  *
  * @returns {Object} unknown
  */
-export function saveSession(semotus: Semotus, sessionId): SavedSession {
-    const session = getSession(semotus, sessionId);
+export function save(semotus: Semotus, sessionId): SavedSession {
+    const session = get(semotus, sessionId);
 
     session.nextSaveSessionId = session.nextSaveSessionId + 1;
     session.savedSessionId = session.nextSaveSessionId;
@@ -156,7 +156,7 @@ export function saveSession(semotus: Semotus, sessionId): SavedSession {
     };
 
     session.objects = objects;
-    semotus.logger.debug({component: 'semotus', module: 'saveSession', activity: 'save'});
+    semotus.logger.debug({component: 'semotus', module: 'save', activity: 'save'});
 
     return savedSession;
 }
