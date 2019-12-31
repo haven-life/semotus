@@ -126,7 +126,8 @@ declare var define;
 	 * @param {unknown} nextObjId unknown
 	 */
 	RemoteObjectTemplate.setMinimumSequence = function setMinimumSequence(nextObjId) {
-		this._getSession().nextObjId = Math.max(nextObjId, this._getSession().nextObjId);
+        const session = SessionHelpers.getSession(this);
+        session.nextObjId = Math.max(nextObjId, session.nextObjId);
 	};
 
 	/**
@@ -146,7 +147,7 @@ declare var define;
 	 * @returns {Number} The number of remote calls pending in the session.
 	 */
 	RemoteObjectTemplate.getPendingCallCount = function getPendingCallCount(sessionId) {
-		const session = this._getSession(sessionId);
+        const session = SessionHelpers.getSession(this, sessionId);
 
 		return Object.keys(session.pendingRemoteCalls).length;
 	};
@@ -191,7 +192,7 @@ declare var define;
 	 * @param {unknown} sessionId optional session id
 	 */
 	RemoteObjectTemplate.enableSendMessage = function enableSendMessage(value, messageCallback, sessionId) {
-		const session = this._getSession(sessionId);
+        const session = SessionHelpers.getSession(this, sessionId);
 		session.sendMessageEnabled = value;
 
 		if (messageCallback) {
@@ -227,7 +228,7 @@ declare var define;
 
 		let callContext;
 		let hadChanges = 0;
-		const session = this._getSession();
+        const session = SessionHelpers.getSession(this);
 		const remoteCallId = remoteCall.remoteCallId;
 
 		switch (remoteCall.type) {
@@ -826,7 +827,7 @@ declare var define;
 	 * @returns {*} unknown
 	 */
 	RemoteObjectTemplate.serializeAndGarbageCollect = function serializeAndGarbageCollect() {
-		const session = this._getSession();
+        const session = SessionHelpers.getSession(this);
 		const idMap = {};
 		let objectKey = '';
 		let propKey = '';
@@ -897,7 +898,7 @@ declare var define;
 	 * @returns {*} the message or null
 	 */
 	RemoteObjectTemplate.getMessage = function getMessage(sessionId, forceMessage) {
-		const session = this._getSession(sessionId);
+        const session = SessionHelpers.getSession(this, sessionId);
 		let message = session.remoteCalls.shift();
 
 		if (message) {
@@ -925,7 +926,7 @@ declare var define;
 	 * @param {unknown} sessionId unknown
 	 */
 	RemoteObjectTemplate.clearPendingCalls = function clearPendingCalls(sessionId) {
-		const session = this._getSession(sessionId);
+        const session = SessionHelpers.getSession(this, sessionId);
 		session.remoteCalls = [];
 	};
 
@@ -938,7 +939,7 @@ declare var define;
  * @returns {[]} the messages in an array
  *
  RemoteObjectTemplate.getMessages = function(sessionId) {
-    const session = this._getSession(sessionId);
+    const session = SessionHelpers.getSession(this, sessionId);
     const messages = [];
     const message;
     while (message = session.remoteCalls.shift())
@@ -989,7 +990,7 @@ declare var define;
 	 * @returns {unknown} unknown
 	 */
 	RemoteObjectTemplate.getChangeStatus = function getChangeStatus() {
-		this._getSession(); // necessary?
+        SessionHelpers.getSession(this); // necessary?
 
 		let a = 0;
 		let c = 0;
@@ -1027,7 +1028,7 @@ declare var define;
 		}
 		this.nextDispenseId = null;
 
-		const session = this._getSession(undefined, true); // May not have one if called from new
+        const session = SessionHelpers.getSession(this, undefined); // May not have one if called from new
 		if (!this.__transient__ && session) {
 			session.objects[obj.__id__] = obj;
 		}
@@ -1510,7 +1511,7 @@ declare var define;
 	/**************************** Change Management Functions **********************************/
 
 	RemoteObjectTemplate._generateChanges = function generateChanges() {
-		const session = this._getSession();
+        const session = SessionHelpers.getSession(this);
 
 		for (var obj in session.objects) {
 			this._logChanges(session.objects[obj]);
@@ -1727,7 +1728,7 @@ declare var define;
 	 * @private
 	 */
 	RemoteObjectTemplate._convertArrayReferencesToChanges = function convertArrayReferencesToChanges() {
-		const session = this._getSession();
+        const session = SessionHelpers.getSession(this);
 		const subscriptions = this._getSubscriptions();
 
 		// Iterate
@@ -1832,7 +1833,7 @@ declare var define;
 	 * If an actual change set __changed__
 	 */
 	RemoteObjectTemplate.MarkChangedArrayReferences = function MarkChangedArrayReferences() {
-		const session = this._getSession();
+        const session = SessionHelpers.getSession(this);
 		const subscriptions = this._getSubscriptions();
 
 		for (var subscription in subscriptions) {
@@ -1948,7 +1949,7 @@ declare var define;
 	 * @returns {unknown}
 	 */
 	RemoteObjectTemplate.getObject = function getObject(objId, template) {
-		const session = this._getSession();
+        const session = SessionHelpers.getSession(this);
 		const obj = session.objects[objId];
 
 		if (obj && obj.__template__ && obj.__template__ == template) {
@@ -1971,7 +1972,7 @@ declare var define;
 	 * @private
 	 */
 	RemoteObjectTemplate._applyChanges = function applyChanges(changes, force, subscriptionId, callContext) {
-		const session = this._getSession();
+        const session = SessionHelpers.getSession(this);
 		const rollback = [];
 
 		this.processingSubscription = this._getSubscription(subscriptionId);
@@ -2261,7 +2262,7 @@ declare var define;
 		newValue,
 		force
 	) {
-		const session = this._getSession();
+        const session = SessionHelpers.getSession(this);
 		let currentValue;
 
 		// Get old, new and current value to determine if change is still applicable
@@ -2460,7 +2461,7 @@ declare var define;
 	 * @private
 	 */
 	RemoteObjectTemplate._rollbackChanges = function rollbackChanges() {
-		const session = this._getSession();
+        const session = SessionHelpers.getSession(this);
 		const changes = this.getChanges();
 
 		for (var objId in changes) {
@@ -2511,7 +2512,7 @@ declare var define;
 
 		template = this._resolveSubClass(template, objId, defineProperty);
 
-		const session = this._getSession();
+        const session = SessionHelpers.getSession(this);
 		const sessionReference = session ? session.objects[objId] : null;
 		let newValue;
 
@@ -2570,7 +2571,7 @@ declare var define;
 	RemoteObjectTemplate.inject = function inject(template, injector) {
 		template.__injections__.push(injector);
 		// Go through existing objects to inject them as well
-		const session = this._getSession();
+        const session = SessionHelpers.getSession(this);
 
 		for (var obj in session.objects) {
 			if (this._getBaseClass(session.objects[obj].__template__) == this._getBaseClass(template)) {
@@ -2593,7 +2594,7 @@ declare var define;
 	 */
 
 	RemoteObjectTemplate._queueRemoteCall = function queueRemoteCall(objId, functionName, deferred, args) {
-		const session = this._getSession();
+        const session = SessionHelpers.getSession(this);
 		args = Array.prototype.slice.call(args); // JS arguments array not an array after all
 
 		session.remoteCalls.push({
@@ -2618,7 +2619,7 @@ declare var define;
 	 * @private
 	 */
 	RemoteObjectTemplate._processQueue = function processQueue() {
-		const session = this._getSession();
+        const session = SessionHelpers.getSession(this);
 
 		if (session.sendMessage && session.sendMessageEnabled) {
 			const message = this.getMessage();
@@ -2689,7 +2690,7 @@ declare var define;
 	 * @private
 	 */
 	RemoteObjectTemplate._fromTransport = function clone(obj) {
-		const session = this._getSession();
+        const session = SessionHelpers.getSession(this);
 
 		switch (obj.type) {
 			case 'date':
