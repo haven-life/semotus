@@ -1510,11 +1510,11 @@ declare var define;
 		}
 	};
 
-	function objectOnClientOnly(remoteObjectTemplate, obj) {
+	function objectOnClientOnly(remoteObjectTemplate: Semotus, obj) {
 		return remoteObjectTemplate.role == 'client' && obj.__template__.__toServer__ === false;
 	}
 
-	function objectOnServerOnly(remoteObjectTemplate, obj) {
+	function objectOnServerOnly(remoteObjectTemplate: Semotus, obj) {
 		return remoteObjectTemplate.role == 'server' && obj.__template__.__toClient__ === false;
 	}
 
