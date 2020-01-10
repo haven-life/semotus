@@ -25,7 +25,7 @@ jobs:
 
       - run:
           name: compile
-          command: npm run compile
+          command: npm run build
 
       # run tests!
       - run:

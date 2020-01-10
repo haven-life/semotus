@@ -6,13 +6,8 @@ ObjectTemplate['toServerRuleSet'] = ['ServerRule'];
 @supertypeClass({ toClient: false, toServer: true })
 class Dummy { }
 
-import { Customer } from './Customer';
-import { Account } from './Account';
-import { Address } from './Address';
 declare function require(name: string);
-import { expect } from 'chai';
 
-import * as Q from 'q';
 //expect(Dummy['__toClient__']).to.equal(false);//
 //expect(Dummy['__toServer__']).to.equal(true);
 
@@ -21,7 +16,7 @@ export class Controller extends Supertype {
 	@remote({
 		on: 'server'
 	})
-	mainFunc(...args): Q.Promise<any> {
+	mainFunc(...args): Promise<any> {
 		return ObjectTemplate.serverAssert();
 	}
 
@@ -31,11 +26,11 @@ export class Controller extends Supertype {
 			controller.serverValidatorCounter = args.length;
 			if (args.length === 3 && args[0] === 'first' && args[1] === 'second' && args[2] === 'third') {
 				controller.argumentValidator = true;
-				await Q.delay(1500);
+				await delay(1500);
 				return true;
 			}
 			controller.argumentValidator = false;
-			await Q.delay(1500);
+			await delay(1500);
 			return false;
 		}
 	})
@@ -173,7 +168,7 @@ export class Controller extends Supertype {
 	 */
 	async postServerErrorHandler(errorType, remoteCallId, obj, functionName, callContext, changeString) {
 		if (functionName === 'testAsyncPostServerError') {
-			await Q.delay(1500);
+			await delay(1500);
 			this.asyncErrorHandlerCalled = true;
 		}
 		else if (functionName === 'tryThrowingAnErrorFromErrorHandler') {

@@ -23,13 +23,14 @@
  objects created with it's templates.  The synchronization
  */
 
-import {ChangeGroup, Semotus, Subscription} from './helpers/Types';
+import {ArrayTypes, SavedSession, Semotus, SendMessage} from './helpers/Types';
 import {property, remote, Supertype, supertypeClass} from './decorators';
 import {Bindable, Persistable, Remoteable} from './setupExtends';
 import * as Sessions from './helpers/Sessions';
 import * as Subscriptions from './helpers/Subscriptions';
 import {defer, delay} from './helpers/Utilities';
 import * as Changes from './helpers/Changes';
+import * as ChangeGroups from './helpers/ChangeGroups';
 
 declare var define;
 
@@ -37,13 +38,13 @@ declare var define;
 (function(root, factory) {
 	'use strict';
 	if (typeof define === 'function' && define.amd) {
-		define(['q', 'underscore', '@havenlife/supertype'], factory);
+		define(['underscore', '@havenlife/supertype'], factory);
 	} else if (typeof exports === 'object') {
-		module.exports = factory(require('q'), require('underscore'), require('@havenlife/supertype'));
+		module.exports = factory(require('underscore'), require('@havenlife/supertype'));
 	} else {
-		root.RemoteObjectTemplate = factory(root.Q, root._, root.ObjectTemplate);
+		root.RemoteObjectTemplate = factory(root._, root.ObjectTemplate);
 	}
-})(this, function(Q, _, SupertypeModule) {
+})(this, function (_, SupertypeModule) {
 	'use strict';
 
 	var ObjectTemplate = SupertypeModule.default;
@@ -111,14 +112,18 @@ declare var define;
 	 *
 	 * @returns {*} unknown
 	 */
-    RemoteObjectTemplate.createSession = Sessions.create.bind(null, this);
+	RemoteObjectTemplate.createSession = function createSession(role, sendMessage: SendMessage, sessionId) {
+		return Sessions.create(this, role, sendMessage, sessionId);
+	};
 
 	/**
 	 * Remove the session from the sessions map, rejecting any outstanding promises
 	 *
 	 * @param {unknown} sessionId unknown
 	 */
-    RemoteObjectTemplate.deleteSession = Sessions.remove.bind(null, this);
+	RemoteObjectTemplate.deleteSession = function deleteSession(sessionId: string | number) {
+		return Sessions.remove(this, sessionId)
+	};
 
 	/**
 	 * After resynchronizing sessions we need to set a new sequence number to be used in
@@ -138,7 +143,9 @@ declare var define;
 	 *
 	 * @returns {Object} unknown
 	 */
-    RemoteObjectTemplate.saveSession = Sessions.save.bind(null, this);
+	RemoteObjectTemplate.saveSession = function saveSession(sessionId) {
+		return Sessions.save(this, sessionId);
+	};
 
 	/**
 	 * A public function to determine whether there are remote calls in progress
@@ -164,7 +171,9 @@ declare var define;
 	 *
 	 * @returns {Boolean} false means that messages were in flight and a reset is needed
 	 */
-    RemoteObjectTemplate.restoreSession = Sessions.restore.bind(null, this);
+	RemoteObjectTemplate.restoreSession = function restoreSession(sessionId, savedSession: SavedSession, sendMessage: SendMessage) {
+		return Sessions.restore(this, sessionId, savedSession, sendMessage);
+	};
 
 	/**
 	 * Indicate that all changes have been accepted outside of the message
@@ -173,7 +182,9 @@ declare var define;
 	 * @param {unknown} sessionId unknown
 	 */
 
-    RemoteObjectTemplate.syncSession = Sessions.sync.bind(null, this);
+	RemoteObjectTemplate.syncSession = function syncSession(sessionId) {
+		return Sessions.sync(this, sessionId);
+	};
 
 	/**
 	 * Set the current session to a session id returned from createSession()
@@ -211,7 +222,9 @@ declare var define;
 	 *
 	 * @returns {*} unknown
 	 */
-    RemoteObjectTemplate.subscribe = Subscriptions.subscribe.bind(null, this);
+	RemoteObjectTemplate.subscribe = function subscribe(role) {
+		return Subscriptions.subscribe(this, role);
+	};
 
 	/**
 	 * Process a remote call message that was created and passed to the sendMessage callback
@@ -952,21 +965,6 @@ declare var define;
     return messages;
 }
  */
-	RemoteObjectTemplate.getChangeGroup = function getChangeGroup(type, subscriptionId) {
-		const subscription: Subscription = this._getSubscription(subscriptionId);
-		return subscription.log[type];
-	};
-
-	/**
-	 * Remove a change group from a subscription
-	 *
-	 * @param {unknown} type unknown
-	 * @param {unknown} subscriptionId unknown
-	 */
-	RemoteObjectTemplate.deleteChangeGroup = function deleteChangeGroup(type, subscriptionId) {
-		this._getSubscription(subscriptionId).log[type] = {};
-	};
-
 	/**
 	 * Retrieve a change group from a subscription
 	 *
@@ -976,11 +974,11 @@ declare var define;
 	 */
 	RemoteObjectTemplate.getChanges = function getChanges(subscriptionId) {
 		if (!this._useGettersSetters) {
-			this._generateChanges();
+			Changes.generate(this);
 		}
 
 		this._convertArrayReferencesToChanges();
-		const changes: ChangeGroup = this.getChangeGroup('change', subscriptionId);
+		const changes = ChangeGroups.getPropChangeGroup(subscriptionId, this);
 
 		return changes;
 	};
@@ -997,13 +995,13 @@ declare var define;
 		let c = 0;
 
 		for (var subscriptionId in this.subscriptions) {
-			const changes = this.getChangeGroup('change', subscriptionId);
+			const changes = ChangeGroups.getPropChangeGroup(subscriptionId, this);
 
-			c += changes.length;
+			c += Object.keys(changes).length;
 
-			const arrays = this.getChangeGroup('array', subscriptionId);
+			const arrays = ChangeGroups.getArrayChangeGroup('array', subscriptionId, this);
 
-			a += arrays.length;
+			a += Object.keys(arrays).length;
 		}
 
 		return a + ' arrays ' + c + ' changes ';
@@ -1445,71 +1443,6 @@ declare var define;
 		this.__changeTracking__ = prevChangeTracking;
 	};
 
-	/**************************** Change Management Functions **********************************/
-
-	RemoteObjectTemplate._generateChanges = function generateChanges() {
-        const session = Sessions.get(this);
-
-		for (var obj in session.objects) {
-			this._logChanges(session.objects[obj]);
-		}
-	};
-
-	/**
-	 * Simulate getters and setters by tracking the old value and if it
-	 * has changed, creating a change log.  local properties are ignored
-	 * and properties not to be transmitted to the other party do not
-	 * generate changes but still track the old value so that changes
-	 * can be applied from the other party
-	 *
-	 * @param {unknown} obj - object to be processed
-	 *
-	 * @private
-	 */
-	RemoteObjectTemplate._logChanges = function logChanges(obj) {
-		// Go through all the properties and transfer them to newly created object
-		const props = obj.__template__.getProperties();
-
-		for (var prop in props) {
-			const defineProperty = props[prop];
-			const type = defineProperty.type;
-
-            if (type && Changes.manage(defineProperty)) {
-                const createChanges = Changes.create(defineProperty, obj.__template__, this);
-
-				if (type == Array) {
-					if (createChanges) {
-						if (obj['__' + prop] && !obj[prop]) {
-							// switch to null treated like a property change
-							this._changedValue(obj, prop, obj[prop]);
-						} else if (obj[prop]) {
-							// switch from null like an array ref where array will be created
-							if (!obj['__' + prop]) {
-								if (obj[prop].length == 0) {
-									// switch to empty array
-									this._changedValue(obj, prop, obj[prop]);
-								}
-
-								obj['__' + prop] = []; // Start from scratch
-							}
-
-							this._referencedArray(obj, prop, obj['__' + prop]);
-						}
-					}
-				} else {
-					const currValue = this._convertValue(obj[prop]);
-					const prevValue = this._convertValue(obj['__' + prop]);
-
-					if (createChanges && currValue !== prevValue) {
-						this._changedValue(obj, prop, obj[prop]);
-					}
-
-					obj['__' + prop] = obj[prop];
-				}
-			}
-		}
-	};
-
 	function objectOnClientOnly(remoteObjectTemplate: Semotus, obj) {
 		return remoteObjectTemplate.role == 'client' && obj.__template__.__toServer__ === false;
 	}
@@ -1548,7 +1481,7 @@ declare var define;
 
 		for (var subscription in subscriptions) {
 			if (subscriptions[subscription] != this.processingSubscription) {
-				const changeGroup = this.getChangeGroup('change', subscription);
+				const changeGroup = ChangeGroups.getPropChangeGroup(subscription, this);
 
 				// Get normalized values substituting ids for ObjectTemplate objects
 				const newValue = this._convertValue(value);
@@ -1610,9 +1543,11 @@ declare var define;
 		}
 
 		// Create a change group entries either from the referenced array or from a previously saved copy of the array
-		function processSubscriptions(changeType, existingChangeGroup) {
+
+		// Only array or dirty
+		function processSubscriptions(changeType: ArrayTypes, existingChangeGroup) {
 			for (var subscription in subscriptions) {
-				const changeGroup = this.getChangeGroup(changeType, subscription);
+				const changeGroup = ChangeGroups.getArrayChangeGroup(changeType, subscription, this);
 				if (subscriptions[subscription] != this.processingSubscription) {
 					if (existingChangeGroup) {
 						copyChangeGroup(changeGroup, existingChangeGroup);
@@ -1658,6 +1593,9 @@ declare var define;
 	};
 
 	/**
+	 * @TODO: Consolidate _convertArrayReferencesToChanges with MarkArrayReferencesAsChanged
+	 */
+	/**
 	 * Determine whether each array reference was an actual change or just a reference
 	 * If an actual change convert to a change log entry.  For arrays the changes
 	 * structure in the subscription log is the old and new value of the entire array
@@ -1671,8 +1609,8 @@ declare var define;
 		// Iterate
 		for (var subscription in subscriptions) {
 			if (subscriptions[subscription] != this.processingSubscription) {
-				const changeGroup = this.getChangeGroup('change', subscription);
-				const refChangeGroup = this.getChangeGroup('array', subscription);
+				const changeGroup = ChangeGroups.getPropChangeGroup(subscription, this);
+				const refChangeGroup = ChangeGroups.getArrayChangeGroup('array', subscription, this);
 
 				// Look at every array reference
 				for (var key in refChangeGroup) {
@@ -1707,6 +1645,8 @@ declare var define;
 					}
 
 					// Walk through all elements (which ever is longer, original or new)
+
+					//@TODO: Double check this. Fixing this semotus bug might break other parts
 					const len = Math.max(curr.length, orig.length);
 
 					for (var ix = 0; ix < len; ++ix) {
@@ -1759,8 +1699,8 @@ declare var define;
 						}
 					}
 				}
-				this.deleteChangeGroup('arrayDirty', subscription);
-				this.deleteChangeGroup('array', subscription);
+				ChangeGroups.remove('arrayDirty', subscription, this);
+				ChangeGroups.remove('array', subscription, this);
 			}
 		}
 	};
@@ -1775,7 +1715,7 @@ declare var define;
 
 		for (var subscription in subscriptions) {
 			if (subscriptions[subscription] != this.processingSubscription) {
-				const refChangeGroup = this.getChangeGroup('arrayDirty', subscription);
+				const refChangeGroup = ChangeGroups.getArrayChangeGroup('arrayDirty', subscription, this);
 
 				// Look at every array reference
 				for (var key in refChangeGroup) {
@@ -2715,19 +2655,8 @@ declare var define;
 	 *
 	 * @private
 	 */
-    RemoteObjectTemplate._getSession = Sessions.get.bind(null, this);
-
-	/**
-	 * Purpose unknown
-	 *
-	 * @param {unknown} type unknown
-	 *
-	 * @private
-	 */
-	RemoteObjectTemplate._deleteChangeGroups = function deleteChangeGroups(type) {
-		for (var subscription in this._getSubscriptions()) {
-			this.deleteChangeGroup(type, subscription);
-		}
+	RemoteObjectTemplate._getSession = function _getSession(sessionId?) {
+		return Sessions.get(this, sessionId);
 	};
 
 	/**
@@ -2739,7 +2668,9 @@ declare var define;
 	 *
 	 * @private
 	 */
-    RemoteObjectTemplate._getSubscriptions = Subscriptions.getSubscriptions.bind(null, this);
+	RemoteObjectTemplate._getSubscriptions = function _getSubscriptions(sessionId?) {
+		return Subscriptions.getSubscriptions(this, sessionId);
+	};
 
 	/**
 	 * Purpose unknown
@@ -2747,9 +2678,8 @@ declare var define;
 	 * @private
 	 */
 	RemoteObjectTemplate._deleteChanges = function deleteChanges() {
-		this._deleteChangeGroups('array');
-		this._deleteChangeGroups('arrayDirty');
-		this._deleteChangeGroups('change');
+		const types = ['array', 'arrayDirty', 'change'];
+		types.forEach((type) => ChangeGroups.removeAll(type, this));
 	};
 
 	/**
@@ -2761,7 +2691,9 @@ declare var define;
 	 *
 	 * @private
 	 */
-    RemoteObjectTemplate._getSubscription = Subscriptions.getSubscription.bind(null, this);
+	RemoteObjectTemplate._getSubscription = function _getSubscription(subscriptionId) {
+		return Subscriptions.getSubscription(this, subscriptionId);
+	};
 
 	/**
 	 * Purpose unknown

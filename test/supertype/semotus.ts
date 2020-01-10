@@ -26,9 +26,7 @@ ServerObjectTemplate.__conflictMode__ = 'soft';
 ServerObjectTemplate.memSession = { semotus: {} };
 ServerObjectTemplate.__dictionary__ = RemoteObjectTemplate.__dictionary__;
 
-import { expect } from 'chai';
-import * as mocha from 'mocha';
-import * as Q from 'q';
+import {expect} from 'chai';
 
 function sendToServer(message) {
 	ServerObjectTemplate.processMessage(message);
@@ -229,7 +227,7 @@ describe('Typescript Banking Example', function () {
 	it('can get a synchronization error from overlapping calls', function (done) {
 		this.timeout(7000);
 		RemoteObjectTemplate.serverAssert = function () {
-			return Q.delay(1000);
+			return delay(1000);
 		};
 		clientController.mainFunc().then(function () {
 			expect('Should not be here').to.equal(false);
@@ -242,7 +240,7 @@ describe('Typescript Banking Example', function () {
 				},
 				function (e) {
 					console.log(e);
-					Q.delay(1000).then(function () {
+					delay(1000).then(function () {
 						done();
 					});
 				}

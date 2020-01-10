@@ -12,7 +12,7 @@ import {Semotus, Subscription, Subscriptions} from './Types';
  * @private
  */
 
-export function getSubscription(semotus: Semotus, subscriptionId): Subscription {
+export function getSubscription(semotus: Semotus, subscriptionId?): Subscription {
     return Sessions.get(semotus).subscriptions[subscriptionId || 0];
 }
 
@@ -26,7 +26,7 @@ export function getSubscription(semotus: Semotus, subscriptionId): Subscription 
  *
  * @private
  */
-export function getSubscriptions(semotus: Semotus, sessionId): null | Subscriptions {
+export function getSubscriptions(semotus: Semotus, sessionId?): null | Subscriptions {
     const session = Sessions.get(semotus, sessionId);
 
     if (session) {

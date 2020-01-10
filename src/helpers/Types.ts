@@ -1,17 +1,40 @@
 export type Subscription = {
     role: string;
     log: {
-        array: ChangeGroup;
+        array: ArrayGroup;
+        arrayDirty: ArrayGroup;
         change: ChangeGroup;
-        arrayDirty: ChangeGroup;
     }
 }
 
+export const Change = 'change';
+export type ArrayTypes = 'array' | 'arrayDirty';
+
+/**
+ *  id is the id of the object + '/' + property.
+ *  Ex: there are 1 School to Many Students
+ *
+ *  School {
+ *      students: Array<Students>
+ *  }
+ *
+ *  In this case, one entry within this ArrayGroup may be 'server-School-1/students': ["server-Student-3", "server-Student-5"]
+ *
+ *  If that's all the changes then the ArrayGroup would be {'server-School-1/students': ["server-Student-3", "server-Student-5"]}
+ */
+export type ArrayGroup = { [id: string]: ArrayChanges };
+
+/**
+ * An array of Id references to Supertype Objects or primitive values
+ */
+type ArrayChanges = Array<any>;
 export type ChangeGroup = { [objId: string]: PropChanges };
 type PropChanges = { [prop: string]: Changes };
 
 // Changes[0] is oldValue, Changes[1] is newValue
-type Changes = Array<any>;
+type oldVal = any;
+type newVal = any;
+type Changes = [oldVal, newVal][];
 
 export type Subscriptions = { [key: string]: Subscription };
 
@@ -55,13 +78,8 @@ export interface Semotus {
     _setupFunction: (propertyName, propertyValue, role, validate, serverValidation, template) => (any);
     _setupProperty: (propertyName, defineProperty, objectProperties, defineProperties) => void;
     withoutChangeTracking: (cb) => void;
-    _createChanges: (defineProperty, template) => boolean;
-    _acceptChanges: (defineProperty, template) => boolean;
-    _generateChanges: () => void;
-    _manageChanges: (defineProperty) => boolean;
-    _logChanges: (obj) => void;
     _changedValue: (obj, prop, value) => void;
-    _referencedArray: (obj, prop, arrayRef, sessionId) => void;
+    _referencedArray: (obj, prop, arrayRef, sessionId?) => void;
     _convertArrayReferencesToChanges: () => void;
     MarkChangedArrayReferences: () => void;
     _convertValue: (value) => (any[] | null);
@@ -81,8 +99,8 @@ export interface Semotus {
     _extractArguments: (remoteCall) => any;
     _trimArray: (array) => void;
     _deleteChangeGroups: (type) => void;
-    _getSubscriptions: (sessionId) => Subscriptions | null;
-    _getSubscription: (subscriptionId) => Subscription;
+    _getSubscriptions: (sessionId?) => Subscriptions | null;
+    _getSubscription: (subscriptionId?) => Subscription;
     cleanPrivateValues: (prop, logValue, defineProperty) => (string | any);
     Remoteable: (Base) => () => any;
     Bindable: (Base) => () => any;
