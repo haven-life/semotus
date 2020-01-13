@@ -7,7 +7,10 @@
 declare function require(name: string);
 
 // RemoteObjectTemplate will be used for server template creation
-var RemoteObjectTemplate = require('../../index.js');
+var RemoteObjectTemplate = require('../../dist/index.js');
+
+var delay = require('../../dist/helpers/Utilities.js').delay;
+
 RemoteObjectTemplate.role = 'server';
 RemoteObjectTemplate._useGettersSetters = true;
 RemoteObjectTemplate.maxCallTime = 60 * 1000;
