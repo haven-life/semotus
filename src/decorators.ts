@@ -84,14 +84,14 @@ export function supertypeClass(objectTemplate, SupertypeModule, target): any {
     return decorator; // decorator will be called 2nd time with ret as a closure
 }
 
-export function Supertype(objectTemplate, SupertypeModule) {
-    return SupertypeModule.Supertype.call(this, objectTemplate);
+export function Supertype(template, objectTemplate, Supertype) {
+    return Supertype.call(template, objectTemplate);
 }
 
-export function property(objectTemplate, SupertypeModule, props) {
+export function property(objectTemplate, SupertypeModule, props, toClientRuleSet, toServerRuleSet) {
     props = props || {};
-    props.toClient = applyRuleSet(props.toClient, this.toClientRuleSet);
-    props.toServer = applyRuleSet(props.toServer, this.toServerRuleSet);
+    props.toClient = applyRuleSet(props.toClient, toClientRuleSet);
+    props.toServer = applyRuleSet(props.toServer, toServerRuleSet);
     const baseDecorator = SupertypeModule.property(props, objectTemplate);
     return function (target, targetKey) {
         baseDecorator(target, targetKey);

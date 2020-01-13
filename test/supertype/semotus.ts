@@ -133,7 +133,7 @@ describe('Typescript Banking Example', function () {
 				expect(clientController.sam.roles[1].account.getBalance()).to.equal(125);
 				done();
 			})
-			.fail(function (e) {
+            .catch(function (e) {
 				done(e);
 			});
 		console.log('foo');
@@ -151,7 +151,7 @@ describe('Typescript Banking Example', function () {
 				expect(clientController.sam.roles[0].account.getBalance()).to.equal(200);
 				done();
 			})
-			.fail(function (e) {
+            .catch(function (e) {
 				done(e);
 			});
 	});
@@ -165,7 +165,7 @@ describe('Typescript Banking Example', function () {
 				expect(serverController.sam.roles[0].account.getBalance()).to.equal(300);
 				done();
 			})
-			.fail(function (e) {
+            .catch(function (e) {
 				done(e);
 			});
 	});
@@ -181,7 +181,7 @@ describe('Typescript Banking Example', function () {
 				expect(serverController.sam.roles[2].account.address.lines[0]).to.equal('Plantana');
 				done();
 			})
-			.fail(function (e) {
+            .catch(function (e) {
 				done(e);
 			});
 	});
@@ -201,7 +201,7 @@ describe('Typescript Banking Example', function () {
 					done();
 				}
 			)
-			.fail(function (e) {
+            .catch(function (e) {
 				done(e);
 			});
 	});
@@ -220,7 +220,7 @@ describe('Typescript Banking Example', function () {
 					done();
 				}
 			)
-			.fail(function (e) {
+            .catch(function (e) {
 				done(e);
 			});
 	});
@@ -245,7 +245,7 @@ describe('Typescript Banking Example', function () {
 					});
 				}
 			)
-			.fail(function (e) {
+            .catch(function (e) {
 				done(e);
 			});
 	});
@@ -268,7 +268,7 @@ describe('Typescript Banking Example', function () {
 				expect(serverController.sam.roles[0].account.getBalance()).to.equal(balance - 100);
 				done();
 			})
-			.fail(function (e) {
+            .catch(function (e) {
 				done(e);
 			});
 	});
@@ -286,7 +286,7 @@ describe('Typescript Banking Example', function () {
 				expect(clientController.onClientWithApp).to.equal(true);
 				done();
 			})
-			.fail(function (e) {
+            .catch(function (e) {
 				done(e);
 			});
 	});
@@ -337,7 +337,7 @@ describe('Typescript Banking Example', function () {
 					done();
 				}
 			)
-			.fail(function (e) {
+            .catch(function (e) {
 				done(e);
 			});
 	});
@@ -361,7 +361,7 @@ describe('Typescript Banking Example', function () {
 					done();
 				}
 			)
-			.fail(function (e) {
+            .catch(function (e) {
 				done(e);
 			});
 	});
@@ -387,7 +387,7 @@ describe('Typescript Banking Example', function () {
 					done();
 				}
 			)
-			.fail(function (e) {
+            .catch(function (e) {
 				done(e);
 			});
 	});

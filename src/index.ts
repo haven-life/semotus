@@ -2712,18 +2712,22 @@ declare var define;
 		return logValue;
 	};
 
-	RemoteObjectTemplate.bindDecorators = function(objectTemplate) {
-		objectTemplate = objectTemplate || this;
+    RemoteObjectTemplate.bindDecorators = function (objectTemplate) {
+        objectTemplate = objectTemplate || this;
 
-		this.supertypeClass = supertypeClass.bind(this, objectTemplate, SupertypeModule);
-		this.Supertype = Supertype.bind(this, objectTemplate, SupertypeModule);
-		this.Supertype.prototype = SupertypeModule.Supertype.prototype;
-		this.property = property.bind(this, objectTemplate, SupertypeModule);
-		this.remote = remote.bind(this, objectTemplate);
+        this.supertypeClass = supertypeClass.bind(this, objectTemplate, SupertypeModule);
+        this.Supertype = function () {
+            return Supertype(this, objectTemplate, SupertypeModule.Supertype); // This is the class definition itself
+        };
+        this.Supertype.prototype = SupertypeModule.Supertype.prototype;
+        this.property = function (props) {
+            return property(objectTemplate, SupertypeModule, props, this.toClientRuleSet, this.toServerRuleSet);
+        };
+        this.remote = remote.bind(null, objectTemplate);
+    };
 
-	};
 
-	RemoteObjectTemplate.Persistable = Persistable;
+    RemoteObjectTemplate.Persistable = Persistable;
 	RemoteObjectTemplate.Remoteable = Remoteable;
 	RemoteObjectTemplate.Bindable = Bindable;
 

@@ -18,17 +18,19 @@
 		"mocha": "5.2.0",
 		"nyc": "^15.0.0",
 		"sinon": "1.15.x",
+		"ts-mocha": "^6.0.0",
 		"ts-node": "^6.1.0",
 		"typescript": "3.5.2",
 		"underscore": "^1.9.1"
 	},
 	"scripts": {
 		"lint": "eslint .",
-		"tsTests": "nyc npm run test:ts",
+		"coverage:ts": "nyc npm run test:ts",
 		"debugTSTests": "mocha --inspect-brk test/supertype/semotus.js",
 		"debugJSTests": "mocha --inspect-brk test/*.js",
-		"test:ts": "mocha test/supertype/semotus.js",
+		"test:ts:compiled": "mocha test/supertype/semotus.js",
 		"test:js": "mocha test/*.js",
+		"test:ts": "ts-mocha -p ./src/tsconfig.json test/supertype/semotus.ts",
 		"test": "mocha test/*.js test/supertype/semotus.js",
 		"coverage": "nyc npm run test",
 		"clean": "rm -rf ./dist",
@@ -37,11 +39,7 @@
 		"compileSrc": "tsc -p ./src/tsconfig.json",
 		"compileTests": "tsc -p ./test/supertype/tsconfig.json",
 		"build": "npm run compile && npm run copyStatics",
-		"buildAndTest": "npm run build && npm run test:js && npm run test:ts"
-	},
-	"directories": {},
-	"engines": {
-		"node": ">=0.8.0"
+		"buildAndTest": "npm run build && npm run test:js && npm run test:ts:compiled"
 	},
 	"repository": {
 		"type": "git",
@@ -49,6 +47,5 @@
 	},
 	"bugs": {
 		"url": "http://github.com/haven-life/semotus/issues"
-	},
-	"optionalDependencies": {}
+	}
 }
