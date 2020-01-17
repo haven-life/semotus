@@ -261,7 +261,7 @@ function postCallSuccess(payload: ProcessCallPayload, ret): void {
         remoteCall.name
     );
 
-    packageChanges.call(semotus, {
+    packageChanges(semotus, session,{
         type: 'response',
         sync: true,
         value: JSON.stringify(semotus._toTransport(ret)),
@@ -377,7 +377,7 @@ async function postCallFailure(payload: ProcessCallPayload, err) {
         packageChangesPayload = {
             type: 'error',
             sync: true,
-            value: getError.call(semotus, err),
+            value: getError(err),
             name: remoteCall.name
         };
     }
