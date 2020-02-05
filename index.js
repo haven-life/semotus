@@ -895,7 +895,11 @@
 		 */
 		function packageChanges(message) {
 			this._convertArrayReferencesToChanges();
-			message.changes = JSON.stringify(this.getChanges());
+
+			message.changes = {};
+			if (message.type !== 'error') {
+				message.changes = JSON.stringify(this.getChanges());
+			}
 
 			if (this.memSession && this.memSession.semotus && this.memSession.semotus.callStartTime) {
 				this.memSession.semotus.callStartTime = 0;
