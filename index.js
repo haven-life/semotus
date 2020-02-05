@@ -896,8 +896,10 @@
 		function packageChanges(message) {
 			this._convertArrayReferencesToChanges();
 
-			message.changes = {};
-			if (message.type !== 'error') {
+			if (message.type === 'error') {
+				message.changes = '{}';
+			}
+			else {
 				message.changes = JSON.stringify(this.getChanges());
 			}
 
