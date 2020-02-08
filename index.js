@@ -762,8 +762,7 @@
 							obj,
 							functionName,
 							callContext,
-							changeString,
-							remoteCall.changes
+							changeString
 						)
 					)
 					.then(
