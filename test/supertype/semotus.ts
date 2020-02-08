@@ -347,11 +347,6 @@ describe('Typescript Banking Example', function () {
 	it('Post server error handling works asynchronously', function (done) {
 		clientController.setAllServerRuleCheckFalgsonClient();
 
-		RemoteObjectTemplate.serverAssert = function () {
-			expect(serverController.asyncErrorHandlerCalled).to.equal(true);
-			done();
-		};
-
 		clientController
 			.testAsyncPostServerError()
 			.then(
@@ -360,6 +355,7 @@ describe('Typescript Banking Example', function () {
 				},
 				function (e) {
 					expect(e.text).to.equal('An internal error occurred');
+					expect(serverController.asyncErrorHandlerCalled).to.equal(true);
 					done();
 				}
 			)
@@ -374,9 +370,6 @@ describe('Typescript Banking Example', function () {
 		// 'User defined - postServerErrorHandler threw an error', and then the error message
 		clientController.setAllServerRuleCheckFalgsonClient();
 
-		RemoteObjectTemplate.serverAssert = function () {
-			done();
-		};
 
 		clientController
 			.tryThrowingAnErrorFromErrorHandler()
@@ -415,5 +408,31 @@ describe('Typescript Banking Example', function () {
 					done();
 				}
 			);
+	});
+
+	it('Do not get any changes for this on error', function (done) {
+
+		// For this test, you need to verify if the logs are correct, it should say
+		// 'User defined - postServerErrorHandler threw an error', and then the error message
+		clientController.setAllServerRuleCheckFalgsonClient();
+
+		clientController
+			.testOnErrorDelete()
+			.then(
+				function () {
+					expect(serverController.sam.roles[0].account.getBalance()).to.not.equal(400);
+					expect(serverController.sam.roles[2].account.address.lines[0]).to.not.equal('Plantana');
+					expect('Should not be here').to.equal(false);
+				},
+				function (e) {
+					expect(serverController.sam.roles[0].account.getBalance()).to.not.equal(400);
+					expect(serverController.sam.roles[2].account.address.lines[0]).to.not.equal('Plantana');
+					expect(e.text).to.equal('An internal error occurred');
+					done();
+				}
+			)
+			.fail(function (e) {
+				done(e);
+			});
 	});
 });

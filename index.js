@@ -762,7 +762,8 @@
 							obj,
 							functionName,
 							callContext,
-							changeString
+							changeString,
+							remoteCall.changes
 						)
 					)
 					.then(
@@ -888,6 +889,7 @@
 			}
 		}
 
+
 		/**
 		 * Deal with changes going back to the caller
 		 *
@@ -896,6 +898,13 @@
 		function packageChanges(message) {
 			this._convertArrayReferencesToChanges();
 			message.changes = JSON.stringify(this.getChanges());
+
+			// Deleting any changes on error for this function
+			let remoteObject = session.objects[remoteCall.id];
+			if (message.type === 'error' && this.role === 'server' && remoteObject[remoteCall.name].onErrorDelete) {
+				this.logger.error('On Error Deleting changes: '+ remoteCall.name);
+				message.changes = '{}';
+			}
 
 			if (this.memSession && this.memSession.semotus && this.memSession.semotus.callStartTime) {
 				this.memSession.semotus.callStartTime = 0;
@@ -1211,6 +1220,7 @@
 		role,
 		validate,
 		serverValidation,
+		onErrorDelete,
 		template
 	) {
 		/** @type {RemoteObjectTemplate} */
@@ -1220,6 +1230,7 @@
 		if (!role || role == this.role) {
 			if (role === 'server') {
 				propertyValue.serverValidation = serverValidation;
+				propertyValue.onErrorDelete = onErrorDelete;
 			}
 			return propertyValue;
 		} else {
@@ -3041,6 +3052,7 @@
 
 			// function that we call to validate any changes for remote calls
 			let remoteValidator = defineProperty.serverValidation;
+			let onErrorDelete = defineProperty.onErrorDelete;
 
 			return function(target, propertyName, descriptor) {
 				descriptor.value = objectTemplate._setupFunction(
@@ -3049,6 +3061,7 @@
 					defineProperty.on,
 					defineProperty.validate,
 					remoteValidator,
+					onErrorDelete,
 					defineProperty.target
 				);
 
