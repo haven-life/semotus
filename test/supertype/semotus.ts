@@ -420,13 +420,11 @@ describe('Typescript Banking Example', function () {
 			.testOnErrorDelete()
 			.then(
 				function () {
-					expect(serverController.sam.roles[0].account.getBalance()).to.not.equal(400);
-					expect(serverController.sam.roles[2].account.address.lines[0]).to.not.equal('Plantana');
 					expect('Should not be here').to.equal(false);
 				},
 				function (e) {
-					expect(serverController.sam.roles[0].account.getBalance()).to.not.equal(400);
-					expect(serverController.sam.roles[2].account.address.lines[0]).to.not.equal('Plantana');
+					expect(serverController.sam.roles.length).to.not.equal(clientController.sam.roles.length);
+					expect(serverController.sam.roles.length).to.equal(clientController.sam.roles.length+2);
 					expect(e.text).to.equal('An internal error occurred');
 					done();
 				}

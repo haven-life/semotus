@@ -194,7 +194,6 @@ export class Controller extends Supertype {
 	@remote({on: 'server', onErrorDelete: true})
 	testOnErrorDelete() {
 		this.giveSamASecondAccount();
-		this.sam.roles[0].account.credit(100);
 
 		throw new Error('sup');
 	}
