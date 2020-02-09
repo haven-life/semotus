@@ -433,32 +433,4 @@ describe('Typescript Banking Example', function () {
 				done(e);
 			});
 	});
-
-	it('Do not get any changes for this on error and rollback state', function (done) {
-
-		// For this test, you need to verify if the logs are correct, it should say
-		// 'User defined - postServerErrorHandler threw an error', and then the error message
-		clientController.setAllServerRuleCheckFalgsonClient();
-
-		const numRolesServer = serverController.sam.roles.length;
-		const numRolesClient = clientController.sam.roles.length;
-		expect(numRolesServer).to.equal(numRolesClient);
-
-		clientController
-			.testRollbackStateOnError()
-			.then(
-				function () {
-					expect('Should not be here').to.equal(false);
-				},
-				function (e) {
-					expect(serverController.sam.roles.length).to.equal(numRolesServer);
-					expect(serverController.sam.roles.length).to.equal(clientController.sam.roles.length);
-					expect(e.text).to.equal('An internal error occurred');
-					done();
-				}
-			)
-			.fail(function (e) {
-				done(e);
-			});
-	});
 });

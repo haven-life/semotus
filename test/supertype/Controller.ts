@@ -198,13 +198,6 @@ export class Controller extends Supertype {
 		throw new Error('sup');
 	}
 
-	@remote({on: 'server', rollback: true})
-	testRollbackStateOnError() {
-		this.giveSamASecondAccount();
-
-		throw new Error('sup');
-	}
-
 
 	@remote({ on: 'server' })
 	tryThrowingAnErrorFromErrorHandler() {

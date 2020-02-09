@@ -895,32 +895,22 @@
 		 * @param {unknown} message unknown
 		 */
 		function packageChanges(message) {
+			this._convertArrayReferencesToChanges();
+			message.changes = JSON.stringify(this.getChanges());
+
+			// Deleting any changes on error for this function
+			let remoteObject = session.objects[remoteCall.id];
+			if (message.type === 'error' && this.role === 'server' && remoteObject[remoteCall.name].onErrorDelete) {
+				this.logger.error('On Error Deleting changes: '+ remoteCall.name);
+				message.changes = '{}';
+			}
+
 			if (this.memSession && this.memSession.semotus && this.memSession.semotus.callStartTime) {
 				this.memSession.semotus.callStartTime = 0;
 			}
 
-			this._convertArrayReferencesToChanges();
-
-			// Deleting any changes on error for this function
-			let remoteObject = session.objects[remoteCall.id];
-
-			// Rollback takes precedent
-			if (message.type === 'error' && this.role === 'server' && remoteObject[remoteCall.name].rollback) {
-				this._rollbackChanges(); // This will call this._deleteChanges as well
-				session.sendMessage(message);
-			}
-			else if (message.type === 'error' && this.role === 'server' && remoteObject[remoteCall.name].onErrorDelete) {
-				this.logger.error('On Error Deleting changes: ' + remoteCall.name);
-				message.changes = '{}';
-				session.sendMessage(message);
-				this._deleteChanges();
-			}
-			else { // Default pathway
-				message.changes = JSON.stringify(this.getChanges());
-				session.sendMessage(message);
-				this._deleteChanges();
-			}
-			
+			session.sendMessage(message);
+			this._deleteChanges();
 			this._processQueue();
 		}
 	};
@@ -1230,7 +1220,6 @@
 		validate,
 		serverValidation,
 		onErrorDelete,
-		rollback,
 		template
 	) {
 		/** @type {RemoteObjectTemplate} */
@@ -1241,7 +1230,6 @@
 			if (role === 'server') {
 				propertyValue.serverValidation = serverValidation;
 				propertyValue.onErrorDelete = onErrorDelete;
-				propertyValue.rollback = rollback;
 			}
 			return propertyValue;
 		} else {
@@ -3064,7 +3052,6 @@
 			// function that we call to validate any changes for remote calls
 			let remoteValidator = defineProperty.serverValidation;
 			let onErrorDelete = defineProperty.onErrorDelete;
-			let rollback = defineProperty.rollback;
 
 			return function(target, propertyName, descriptor) {
 				descriptor.value = objectTemplate._setupFunction(
@@ -3074,7 +3061,6 @@
 					defineProperty.validate,
 					remoteValidator,
 					onErrorDelete,
-					rollback,
 					defineProperty.target
 				);
 
