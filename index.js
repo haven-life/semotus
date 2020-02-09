@@ -901,26 +901,26 @@
 
 			this._convertArrayReferencesToChanges();
 
+			const changes = this.getChanges();
 			// Deleting any changes on error for this function
 			let remoteObject = session.objects[remoteCall.id];
 
 			// Rollback takes precedent
 			if (message.type === 'error' && this.role === 'server' && remoteObject[remoteCall.name].rollback) {
-				this._rollbackChanges(); // This will call this._deleteChanges as well
-				session.sendMessage(message);
+				this.logger.error('On Error Rolling back change3: ' + remoteCall.name);
+				rollbackLogic(changes, session);
+				this.logger.error('On Error Rolling back changes5: ' + remoteCall.name);
 			}
 			else if (message.type === 'error' && this.role === 'server' && remoteObject[remoteCall.name].onErrorDelete) {
 				this.logger.error('On Error Deleting changes: ' + remoteCall.name);
 				message.changes = '{}';
-				session.sendMessage(message);
-				this._deleteChanges();
 			}
 			else { // Default pathway
-				message.changes = JSON.stringify(this.getChanges());
-				session.sendMessage(message);
-				this._deleteChanges();
+				message.changes = JSON.stringify(changes);
 			}
-			
+
+			session.sendMessage(message);
+			this._deleteChanges();
 			this._processQueue();
 		}
 	};
@@ -2584,6 +2584,12 @@
 		const session = this._getSession();
 		const changes = this.getChanges();
 
+		rollbackLogic(changes, session);
+
+		this._deleteChanges();
+	};
+
+	function rollbackLogic(changes, session) {
 		for (var objId in changes) {
 			const obj = session.objects[objId];
 
@@ -2602,9 +2608,7 @@
 				}
 			}
 		}
-
-		this._deleteChanges();
-	};
+	}
 
 	/**
 	 * Create an empty object that will have properties updated as they
