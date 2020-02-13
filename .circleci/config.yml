@@ -25,9 +25,13 @@ jobs:
 
       - run:
           name: compile
-          command: npm run compile
+          command: npm run build
 
       # run tests!
       - run:
-          name: test
-          command: npm test
+          name: test:js
+          command: npm run test:js
+
+      - run:
+          name: test:ts
+          command: npm run test:ts

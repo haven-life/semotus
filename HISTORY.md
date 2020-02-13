@@ -124,7 +124,7 @@
 ## 0.1.28
 * Transient objects were generating errors if an equivalent non-transient was in the session
 ## 0.1.27
-* Added deleteSession
+* Added remove
 ## 0.1.26
 * Make sure receiving new objects does not cause extra changes to turn around to the server
 ## 0.1.25
